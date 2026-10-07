@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SI-RDK</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<!--SHELL-START-->
+<div id="login-view" hidden></div>
+<div id="app" class="app" hidden>
+  <header class="topbar">
+    <button class="icon-btn" data-act="toggleSidebar" aria-label="Buka/tutup menu"><svg class="i lg" viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg></button>
+    <a class="brand" href="#dashboard" data-act="go" data-route="dashboard">
+      <span class="logo-mark" aria-label="Logo OJK (placeholder)">OJK</span>
+      <span class="brand-text"><b>SI-RDK</b><small>Sistem Pemantauan Tindak Lanjut Rencana Aksi</small></span>
+    </a>
+    <div class="gsearch" id="gsearch">
+      <svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="gsearch-input" class="input" type="search" autocomplete="off" placeholder="Cari ID, topik, arahan, satker, bidang, dokumen…" aria-label="Pencarian global">
+      <kbd>/</kbd>
+      <div id="gsearch-results" class="dropdown" hidden></div>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="notif-btn" data-act="toggleNotif" aria-label="Notifikasi"><svg class="i lg" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="count-dot" id="notif-count" hidden></span></button>
+      <div id="notif-panel" class="dropdown notif-panel" hidden></div>
+      <button class="profile" data-act="toggleProfile" aria-label="Profil pengguna">
+        <span class="avatar" id="avatar"></span>
+        <span class="profile-text"><b id="profile-name"></b><small id="profile-role"></small></span>
+      </button>
+      <div id="profile-menu" class="dropdown profile-menu" hidden></div>
+    </div>
+  </header>
+  <aside class="sidebar" id="sidebar">
+    <nav class="sidenav" id="sidenav" aria-label="Navigasi utama"></nav>
+    <div class="sidebar-foot" id="sidebar-foot"></div>
+  </aside>
+  <div class="scrim" id="scrim" data-act="closeSidebar" hidden></div>
+  <main class="main" id="main"></main>
+  <nav class="bottomnav" id="bottomnav" aria-label="Navigasi bawah"></nav>
+</div>
+<div id="drawer-root"></div>
+<div id="modal-root"></div>
+<div class="toasts" id="toast-root" aria-live="polite"></div>
+<div id="print-root"></div>
+<!--SHELL-END-->
+<!--LIBS-START-->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!--LIBS-END-->
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/documents.js"></script>
+<script src="js/action-plan.js"></script>
+<script src="js/verification.js"></script>
+<script src="js/audit.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
