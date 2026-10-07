@@ -121,7 +121,8 @@ function loadState() {
   Object.assign(appState, parsed);
   try {
     const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
-    if (s && appState.users.some(u => u.username === s.username && u.active)) appState.currentUser = s;
+    const fresh = s && appState.users.find(u => u.username === s.username && u.active);
+    if (fresh) appState.currentUser = { ...s, ...fresh };
   } catch (e) { /* no session */ }
   saveState();
 }
@@ -136,7 +137,8 @@ function saveState() {
 function resetDemo() {
   const user = appState.currentUser;
   Object.assign(appState, buildSeed());
-  appState.currentUser = user;
+  const fresh = user && appState.users.find(u => u.username === user.username);
+  appState.currentUser = fresh ? { ...user, ...fresh } : user;
   ui.uploads = []; ui.ocr.doc = null;
   scanOverdue();
   saveState();
