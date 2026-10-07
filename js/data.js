@@ -35,7 +35,7 @@ const DOC_SOURCES = ['Rapat Dewan Komisioner', 'Komisi XI DPR RI', 'Sekretariat 
 const DOC_TYPES = ['Risalah RDK', 'Laporan Singkat RDP', 'Laporan Singkat Raker', 'Nota Dinas Arahan', 'Laporan Hasil Pemeriksaan', 'Dokumen Rujukan Lain'];
 
 const DEMO_USERS = [
-  { username: 'admin', password: 'admin123', name: 'Rina Wulandari', role: 'admin', satker: null, title: 'Analis Senior · MRDK', active: true },
+  { username: 'admin', password: 'admin123', name: 'Ardhiansyah K', role: 'admin', satker: null, title: 'Direktur MRDK', active: true },
   { username: 'satker', password: 'satker123', name: 'Budi Santoso', role: 'satker', satker: 'Direktorat Market Conduct', title: 'PIC Direktorat Market Conduct', active: true },
   { username: 'viewer', password: 'viewer123', name: 'Hendra Gunawan', role: 'viewer', satker: null, title: 'Kepala Eksekutif', active: true },
   { username: 'satker.dpb', password: 'satker123', name: 'Sari Indrawati', role: 'satker', satker: 'Departemen Pengawasan Bank', title: 'PIC Departemen Pengawasan Bank', active: true },
@@ -113,7 +113,7 @@ function buildSeed() {
     document_number: s.no,
     document_date: D(s.rdk),
     upload_date: T(s.up, 8 + (i % 5), 10 + i * 3),
-    uploaded_by: 'Rina Wulandari',
+    uploaded_by: 'Ardhiansyah K',
     file_size: 380000 + i * 91234,
     pages: 4 + (i % 5),
     document_status: s.pending ? 'Diunggah' : 'Selesai',
@@ -163,7 +163,7 @@ function buildSeed() {
 
   documents.forEach((d, i) => {
     const s = docSpecs[i];
-    log(d.upload_date, 'Rina Wulandari', 'admin', 'Upload Dokumen', d.document_id, '-', d.document_name);
+    log(d.upload_date, 'Ardhiansyah K', 'admin', 'Upload Dokumen', d.document_id, '-', d.document_name);
     if (!s.pending) {
       log(T(s.up, 13, 5 + i), 'Sistem OCR/LLM', 'system', 'Ekstraksi Dokumen', d.document_id, 'Belum Diproses', 'Selesai', `Akurasi OCR ${d.ocr_accuracy.toFixed(1)}%`);
     }
@@ -191,8 +191,8 @@ function buildSeed() {
     };
     doc.saved_plan_ids.push(id);
 
-    log(createdAt, 'Rina Wulandari', 'admin', 'Registrasi Rencana Aksi', id, '-', 'Register', `Hasil ekstraksi ${doc.document_id}`);
-    if (sat) log(T(spec.up + 2, 9, 5 + i), 'Rina Wulandari', 'admin', 'Assignment', id, 'Satker: -', `Satker: ${sat.name}`);
+    log(createdAt, 'Ardhiansyah K', 'admin', 'Registrasi Rencana Aksi', id, '-', 'Register', `Hasil ekstraksi ${doc.document_id}`);
+    if (sat) log(T(spec.up + 2, 9, 5 + i), 'Ardhiansyah K', 'admin', 'Assignment', id, 'Satker: -', `Satker: ${sat.name}`);
 
     if (uOff != null && progress > 0) {
       const prev = x.prev != null ? x.prev : Math.max(0, progress - 25);
@@ -214,8 +214,8 @@ function buildSeed() {
         };
         if (ver !== 'Menunggu Verifikasi') {
           const vAt = T(Math.min(uOff + 1, -1), 10, 5 + (i % 50));
-          sub.result = ver; sub.resultNote = x.vn || ''; sub.resultBy = 'Rina Wulandari'; sub.resultAt = vAt;
-          log(vAt, 'Rina Wulandari', 'admin', 'Verifikasi', id, 'Menunggu Verifikasi', ver, x.vn || '');
+          sub.result = ver; sub.resultNote = x.vn || ''; sub.resultBy = 'Ardhiansyah K'; sub.resultAt = vAt;
+          log(vAt, 'Ardhiansyah K', 'admin', 'Verifikasi', id, 'Menunggu Verifikasi', ver, x.vn || '');
         }
         ap.submissions.push(sub);
       }
