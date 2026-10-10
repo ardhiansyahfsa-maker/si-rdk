@@ -6,7 +6,9 @@ function logColor(l) {
   if (l.action === 'Verifikasi') return l.newValue === 'Disetujui' ? 'green' : l.newValue === 'Ditolak' ? 'red' : 'violet';
   if (l.action === 'Status Otomatis' || l.action === 'Hapus Dokumen') return 'red';
   if (l.action === 'Submit Verifikasi') return 'amber';
-  if (l.action === 'Kirim ke SI-GRC' || l.action === 'Klasifikasi Strategis') return 'violet';
+  if (l.action === 'Validasi SI-GRC') return l.newValue === 'Diterima' ? 'green' : 'violet';
+  if (l.action === 'Tanggapan Satker (SI-GRC)') return l.newValue === 'Setuju' ? 'green' : 'red';
+  if (l.action === 'Kirim ke SI-GRC' || l.action === 'Usulan Strategis') return 'violet';
   if (['Update Progress', 'Update Status', 'Upload Bukti', 'Simpan Draft'].includes(l.action)) return 'green';
   if (['Login', 'Logout', 'Export Data', 'Cetak Laporan'].includes(l.action)) return 'grey';
   return '';
@@ -31,8 +33,10 @@ function logNarrative(l) {
     case 'Update Status': return `${u} mengubah status ${e} menjadi ${esc(l.newValue)}`;
     case 'Simpan Draft': return `${u} menyimpan draft update ${e}`;
     case 'Hapus Dokumen': return `${u} menghapus dokumen ${esc(l.entity)}`;
-    case 'Kirim ke SI-GRC': return `${u} mengalirkan ${e} ke SI-GRC sebagai input profil risiko satker`;
-    case 'Klasifikasi Strategis': return `${u} mengubah klasifikasi ${e}: ${esc(l.newValue)}`;
+    case 'Usulan Strategis': return `${u} mengusulkan ${e} sebagai penugasan strategis OJK-wide (${esc(l.newValue)})`;
+    case 'Tanggapan Satker (SI-GRC)': return `${u} menanggapi usulan SI-GRC ${e}: <b>${esc(l.newValue)}</b>`;
+    case 'Kirim ke SI-GRC': return `${u} mengirim ${e} ke SI-GRC untuk divalidasi`;
+    case 'Validasi SI-GRC': return `${u} ${l.newValue === 'Diterima' ? 'menerima' : 'mengembalikan'} input ${e} ${l.newValue === 'Diterima' ? 'ke profil risiko satker' : 'ke MRDK'}`;
     case 'Edit Ekstraksi': return `${u} mengoreksi hasil ekstraksi ${e}`;
     default: return `${u} · ${esc(l.action)} ${e}`;
   }
@@ -81,7 +85,7 @@ registerPage('audit', {
         <div class="toolbar">
           <div class="grow">${icon('search')}<input class="input" placeholder="Cari user, entitas (RA-/DOC-), nilai, komentar…" value="${esc(f.q)}" data-input="auditSearch"></div>
           <select class="select sm" id="au-action" data-change="auditFilter" aria-label="Action"><option value="">Semua action</option>${actions.map(a => `<option ${f.action === a ? 'selected' : ''}>${esc(a)}</option>`).join('')}</select>
-          <select class="select sm" id="au-role" data-change="auditFilter" aria-label="Role"><option value="">Semua role</option>${[['admin', 'Admin / MRDK'], ['satker', 'Satker'], ['viewer', 'Viewer'], ['system', 'Sistem']].map(([v, l]) => `<option value="${v}" ${f.role === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
+          <select class="select sm" id="au-role" data-change="auditFilter" aria-label="Role"><option value="">Semua role</option>${[['admin', 'Admin / MRDK'], ['satker', 'Satker'], ['viewer', 'Viewer'], ['grc', 'Validator SI-GRC'], ['system', 'Sistem']].map(([v, l]) => `<option value="${v}" ${f.role === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
           <input class="input sm" type="date" id="au-from" value="${esc(f.from)}" data-change="auditFilter" aria-label="Dari tanggal" style="width:auto">
           <input class="input sm" type="date" id="au-to" value="${esc(f.to)}" data-change="auditFilter" aria-label="Sampai tanggal" style="width:auto">
           <div class="seg" role="group" aria-label="Tampilan"><button class="${f.view === 'timeline' ? 'on' : ''}" data-act="auditView" data-v="timeline">Timeline</button><button class="${f.view === 'table' ? 'on' : ''}" data-act="auditView" data-v="table">Tabel</button></div>
