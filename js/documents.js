@@ -270,7 +270,7 @@ function paperHTML(doc) {
   const topic = items[0]?.topic || doc.topic || '—';
   return `<div class="paper ${done ? '' : 'pending'}">
     ${done ? `<span class="stamp">OCR ${doc.ocr_accuracy ? doc.ocr_accuracy.toFixed(1) + '%' : ''}</span>` : `<span class="stamp" style="color:var(--ink-3);border-color:var(--line);background:#fff">BELUM DIPROSES</span>`}
-    <div class="lh"><span class="logo-mark">OJK</span><div><b>OTORITAS JASA KEUANGAN</b><small>REPUBLIK INDONESIA</small></div></div>
+    <div class="lh"><img class="logo-img " src="assets/logo-ojk.png?v=9" alt="Otoritas Jasa Keuangan" style="height:44px"></div>
     <h4>${esc(doc.document_type)}</h4><div class="nomor">${esc(doc.document_number || '')}</div>
     <table class="meta"><tr><td>Hari/Tanggal</td><td>:</td><td><span class="${done ? 'hl' : ''}">${fmtDateLong(rdk)}</span></td></tr>
       <tr><td>Agenda</td><td>:</td><td><span class="${done ? 'hl' : ''}">${esc(topic)}</span></td></tr>

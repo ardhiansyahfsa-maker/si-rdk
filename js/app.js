@@ -591,10 +591,10 @@ async function exportData({ name, sheet = 'Data', columns, rows, format }) {
 }
 function reportHTML({ title, subtitle, columns, rows }) {
   return `<div class="report"><div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #233548;padding-bottom:8px">
-    <div><div style="font-size:11px;letter-spacing:.08em;color:#555">OTORITAS JASA KEUANGAN · SI-RDK</div><h2>${esc(title)}</h2><div style="font-size:11px;color:#555">${esc(subtitle || '')}</div></div>
+    <div><div style="font-size:11px;letter-spacing:.08em;color:#555">OTORITAS JASA KEUANGAN · SI-RDK Terintegrasi</div><h2>${esc(title)}</h2><div style="font-size:11px;color:#555">${esc(subtitle || '')}</div></div>
     <div style="font-size:10.5px;color:#555;text-align:right">Dicetak: ${fmtDT(new Date().toISOString())}<br>Oleh: ${esc(cu().name)} (${esc(ROLE_LABEL[cu().role])})</div></div>
     <table><thead><tr>${columns.map(c => `<th>${esc(c.label)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${columns.map(c => `<td>${esc(c.get(r) ?? '')}</td>`).join('')}</tr>`).join('')}</tbody></table>
-    <div style="font-size:10px;color:#777;margin-top:10px">${rows.length} baris · Dokumen dihasilkan oleh prototipe SI-RDK.</div></div>`;
+    <div style="font-size:10px;color:#777;margin-top:10px">${rows.length} baris · Dokumen dihasilkan oleh prototipe SI-RDK Terintegrasi.</div></div>`;
 }
 function printReport(opts) {
   if (!opts.rows.length) { toast('Tidak ada data untuk dicetak.', 'warn'); return; }
@@ -635,9 +635,9 @@ function renderLogin(err = '', prefill = {}) {
   v.innerHTML = `<div class="login">
     <section class="login-side">
       <div>
-        <div style="display:flex;align-items:center;gap:12px"><span class="logo-mark" aria-label="Logo OJK (placeholder)">OJK</span><span style="font-size:12px;letter-spacing:.12em;color:#9FB2C4;font-weight:600">OTORITAS JASA KEUANGAN</span></div>
-        <h1 style="margin-top:34px">SI-RDK</h1>
-        <p class="lead">Sistem Pemantauan Tindak Lanjut Rencana Aksi. Dari naskah rujukan hingga verifikasi, setiap arahan tercatat, dipantau, dan dapat ditelusuri.</p>
+        <div><span style="display:inline-block;background:#fff;border-radius:10px;padding:8px 12px"><img class="logo-img " src="assets/logo-ojk.png?v=9" alt="Otoritas Jasa Keuangan" style="height:44px"></span></div>
+        <h1 style="margin-top:34px">SI-RDK Terintegrasi</h1>
+        <p class="lead">Sistem Informasi Rapat Dewan Komisioner Dashboard Pemantauan Strategis. Dari naskah rujukan hingga verifikasi, setiap arahan tercatat, dipantau, dan dapat ditelusuri.</p>
       </div>
       <div class="flow-v">
         <div class="fv n"><span class="dot">${icon('file', 'sm')}</span><div><b>Naskah Rujukan Awal</b><small>Risalah RDK, laporan Komisi XI, LHP BPK</small></div></div><div class="stem"></div>
@@ -651,7 +651,7 @@ function renderLogin(err = '', prefill = {}) {
     </section>
     <section class="login-main">
       <form class="login-card" id="login-form" novalidate>
-        <div style="display:flex;align-items:center;gap:12px"><span class="logo-mark">OJK</span><div><h2>Masuk ke SI-RDK</h2><div class="small muted">Sistem Pemantauan Tindak Lanjut Rencana Aksi</div></div></div>
+        <div><img class="logo-img " src="assets/logo-ojk.png?v=9" alt="Otoritas Jasa Keuangan" style="height:44px;display:block"><div style="margin-top:14px"><h2>Masuk ke SI-RDK Terintegrasi</h2><div class="small muted">Sistem Informasi Rapat Dewan Komisioner Dashboard Pemantauan Strategis</div></div></div>
         ${err ? `<div class="login-err" role="alert">${esc(err)}</div>` : ''}
         <div class="field"><label for="lg-user">Username</label><input class="input" id="lg-user" autocomplete="username" value="${esc(prefill.username || '')}" placeholder="mis. admin"></div>
         <div class="field"><label for="lg-pass">Password</label><input class="input" id="lg-pass" type="password" autocomplete="current-password" value="${esc(prefill.password || '')}" placeholder="••••••••"></div>
@@ -722,7 +722,7 @@ const Actions = {
   },
   openPlan: el => openDrawer(el.dataset.id),
   closeDrawer: () => closeDrawer(),
-  logout: () => confirmDialog({ title: 'Keluar dari SI-RDK?', message: 'Sesi Anda akan diakhiri. Data yang sudah disimpan tetap tersedia.', confirmLabel: 'Keluar', onConfirm: () => logout() }),
+  logout: () => confirmDialog({ title: 'Keluar dari SI-RDK Terintegrasi?', message: 'Sesi Anda akan diakhiri. Data yang sudah disimpan tetap tersedia.', confirmLabel: 'Keluar', onConfirm: () => logout() }),
   switchRole: () => logout(true),
   resetDemo: () => confirmDialog({ title: 'Reset data demo?', message: 'Seluruh perubahan (dokumen unggahan, update, verifikasi, audit trail) akan dihapus dan data kembali ke kondisi awal.', confirmLabel: 'Reset data', tone: 'danger', onConfirm: () => { closeDropdowns(); closeDrawer(); resetDemo(); renderChrome(); go('dashboard'); toast('Data demo telah dikembalikan ke kondisi awal.'); } }),
   searchPick: el => {

@@ -5,7 +5,7 @@
    opened, so "Terlambat" and "mendekati deadline" stay meaningful in demos.
    ========================================================================= */
 
-const SEED_VERSION = 8;
+const SEED_VERSION = 9;
 
 const ROLE_LABEL = { admin: 'Admin / MRDK', satker: 'Satker Pelaksana', viewer: 'Viewer / Pimpinan', grc: 'Admin SI-GRC', rqo: 'Risk & Quality Officer' };
 
@@ -35,7 +35,7 @@ const DOC_SOURCES = ['Rapat Dewan Komisioner', 'Komisi XI DPR RI', 'Sekretariat 
 const DOC_TYPES = ['Risalah RDK', 'Laporan Singkat RDP', 'Laporan Singkat Raker', 'Nota Dinas Arahan', 'Laporan Hasil Pemeriksaan', 'Dokumen Rujukan Lain'];
 
 const DEMO_USERS = [
-  { username: 'admin', password: 'admin123', name: 'Ardhiansyah K', role: 'admin', satker: null, title: 'Direktur MRDK', active: true },
+  { username: 'admin', password: 'admin123', name: 'Ardhiansyah K', role: 'admin', satker: null, title: 'Manajer Senior MRDK', active: true },
   { username: 'satker', password: 'satker123', name: 'Budi Santoso', role: 'satker', satker: 'Direktorat Market Conduct', title: 'PIC Direktorat Market Conduct', active: true },
   { username: 'viewer', password: 'viewer123', name: 'Hendra Gunawan', role: 'viewer', satker: null, title: 'Kepala Eksekutif', active: true },
   { username: 'satker.dpb', password: 'satker123', name: 'Sari Indrawati', role: 'satker', satker: 'Departemen Pengawasan Bank', title: 'PIC Departemen Pengawasan Bank', active: true },

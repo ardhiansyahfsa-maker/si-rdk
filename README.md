@@ -1,4 +1,6 @@
-# SI-RDK (Prototype)
+# SI-RDK Terintegrasi (Prototype)
+
+Sistem Informasi Rapat Dewan Komisioner Dashboard Pemantauan Strategis.
 
 Aplikasi web statis (HTML, CSS, JavaScript) tanpa proses build.
 

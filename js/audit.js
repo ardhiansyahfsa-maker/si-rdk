@@ -98,7 +98,7 @@ Actions.auditFilter = () => { const f = ui.audit; f.action = $('#au-action').val
 Actions.auditView = el => { ui.audit.view = el.dataset.v; renderPage(true); };
 Actions.auditMore = () => { ui.audit.limit += 60; $('#audit-body').innerHTML = auditBodyHTML(); };
 Exporters.audit = () => ({
-  name: 'Audit_Trail', sheet: 'Audit Trail', title: 'Audit Trail SI-RDK', subtitle: `${auditRows().length} catatan`, rows: auditRows(),
+  name: 'Audit_Trail', sheet: 'Audit Trail', title: 'Audit Trail SI-RDK Terintegrasi', subtitle: `${auditRows().length} catatan`, rows: auditRows(),
   columns: [
     { label: 'Log ID', get: l => l.id, w: 11 }, { label: 'Timestamp', get: l => fmtDT(l.ts), w: 18 }, { label: 'User', get: l => l.user, w: 20 }, { label: 'Role', get: l => ROLE_LABEL[l.role] || 'Sistem', w: 16 },
     { label: 'Action', get: l => l.action, w: 22 }, { label: 'Entitas', get: l => l.entity, w: 14 }, { label: 'Old Value', get: l => l.oldValue, w: 26 }, { label: 'New Value', get: l => l.newValue, w: 30 }, { label: 'Comment', get: l => l.comment, w: 50 }
@@ -110,7 +110,7 @@ registerPage('users', {
   render() {
     const lastLogin = u => { const l = [...appState.auditLogs].reverse().find(x => x.action === 'Login' && x.user === u.name); return l ? fmtDT(l.ts) : '—'; };
     return `<div class="page">
-      <div class="page-head"><div><div class="crumb">Administration · User</div><h1>Manajemen User</h1><div class="sub">Akun dan peran pengguna SI-RDK. Autentikasi pada prototipe ini disimulasikan.</div></div>
+      <div class="page-head"><div><div class="crumb">Administration · User</div><h1>Manajemen User</h1><div class="sub">Akun dan peran pengguna SI-RDK Terintegrasi. Autentikasi pada prototipe ini disimulasikan.</div></div>
         <button class="btn primary sm" data-act="addUser">${icon('plus')}Tambah User</button></div>
       <section class="panel"><div class="tbl-wrap has-cards"><table class="rt cards"><thead><tr><th>Nama</th><th>Username</th><th>Role</th><th>Satker</th><th>Status</th><th>Login terakhir</th><th>Action</th></tr></thead><tbody>
         ${appState.users.map(u => `<tr><td data-label="Nama"><span style="display:flex;align-items:center;gap:10px"><span class="avatar ${u.role}" style="width:28px;height:28px;font-size:11px">${initials(u.name)}</span><span><b style="font-weight:600">${esc(u.name)}</b><div class="small muted">${esc(u.title || '')}</div></span></span></td>

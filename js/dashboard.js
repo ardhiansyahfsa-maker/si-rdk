@@ -114,7 +114,7 @@ registerPage('dashboard', {
     const recent = [...plans].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 8);
     return `<div class="page">
       <div class="page-head">
-        <div><div class="crumb">SI-RDK · Dashboard</div><h1>Selamat datang, ${esc(firstName(u.name))}</h1>
+        <div><div class="crumb">SI-RDK Terintegrasi · Dashboard</div><h1>Selamat datang, ${esc(firstName(u.name))}</h1>
           <div class="sub">Berikut kondisi terkini tindak lanjut rencana aksi${u.role === 'satker' ? ` untuk <b>${esc(u.satker)}</b>` : ''}.</div></div>
         <div class="btn-group"><span class="status-line"><span class="sys-dot"></span>Sistem aktif · pembaruan terakhir ${latest ? fmtDT(latest.ts) : '—'}</span>
           ${canSee('executive') ? `<button class="btn sm" data-act="go" data-route="executive">${icon('gauge')}Executive view</button>` : ''}
