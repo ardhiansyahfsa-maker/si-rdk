@@ -637,16 +637,8 @@ function renderLogin(err = '', prefill = {}) {
       <div>
         <div><span style="display:inline-block;background:#fff;border-radius:10px;padding:8px 12px"><img class="logo-img " src="assets/logo-ojk.png?v=9" alt="Otoritas Jasa Keuangan" style="height:44px"></span></div>
         <h1 style="margin-top:34px">SI-RDK Terintegrasi</h1>
-        <p class="lead">Sistem Informasi Rapat Dewan Komisioner Dashboard Pemantauan Strategis. Dari naskah rujukan hingga verifikasi, setiap arahan tercatat, dipantau, dan dapat ditelusuri.</p>
       </div>
-      <div class="flow-v">
-        <div class="fv n"><span class="dot">${icon('file', 'sm')}</span><div><b>Naskah Rujukan Awal</b><small>Risalah RDK, laporan Komisi XI, LHP BPK</small></div></div><div class="stem"></div>
-        <div class="fv"><span class="dot">01</span><div><b>SI-RDK · OCR · LLM · Register</b><small>Ekstraksi poin arahan menjadi data terstruktur</small></div></div><div class="stem"></div>
-        <div class="fv"><span class="dot">02</span><div><b>Dashboard</b><small>Pemantauan progres seluruh rencana aksi</small></div></div><div class="stem"></div>
-        <div class="fv g"><span class="dot">03</span><div><b>Update Status Satker</b><small>Progres, bukti, kendala, target</small></div></div><div class="stem"></div>
-        <div class="fv"><span class="dot">04</span><div><b>Verifikasi Admin / MRDK</b><small>Persetujuan, revisi, atau penolakan</small></div></div><div class="stem"></div>
-        <div class="fv n"><span class="dot">${icon('activity', 'sm')}</span><div><b>Monitoring & Pemanfaatan</b><small>Executive dashboard dan audit trail</small></div></div>
-      </div>
+      <p class="login-tagline">Membangun OJK yang Responsif dan Akuntabel</p>
       <div style="font-size:11.5px;color:#7F95AA">Prototipe untuk demonstrasi. Autentikasi, OCR, dan LLM disimulasikan.</div>
     </section>
     <section class="login-main">
