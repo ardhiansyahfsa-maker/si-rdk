@@ -97,10 +97,10 @@ const icon = (name, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria
 /* --------------------------- State & storage ----------------------------- */
 const STORAGE_KEY = 'sirdk.state.v1';
 const SESSION_KEY = 'sirdk.session.v1';
-const appState = { currentUser: null, users: [], masters: {}, documents: [], actionPlans: [], notifications: [], auditLogs: [], seq: {}, seededAt: null, version: 0 };
+const appState = { currentUser: null, users: [], masters: {}, documents: [], actionPlans: [], notifications: [], auditLogs: [], grcLog: [], seq: {}, seededAt: null, version: 0 };
 const ui = {
   route: 'dashboard', params: {}, drawerPlan: null,
-  reg: { q: '', bidang: '', satker: '', status: '', ver: '', assign: '', prog: '', rdkFrom: '', rdkTo: '', targetTo: '', priority: '', sort: { key: 'id', dir: 1 }, page: 1, size: 10, showFilters: false },
+  reg: { q: '', bidang: '', satker: '', status: '', ver: '', assign: '', prog: '', rdkFrom: '', rdkTo: '', targetTo: '', priority: '', strat: '', sort: { key: 'id', dir: 1 }, page: 1, size: 10, showFilters: false },
   docs: { q: '', type: '', status: '', source: '', sort: { key: 'upload_date', dir: -1 } },
   dreg: { q: '', doc: '' },
   upd: { tab: 'action', satker: '' },
@@ -424,7 +424,7 @@ function registerPage(id, def) { Pages[id] = def; }
 const PAGE_ACCESS = {
   dashboard: ['admin', 'satker', 'viewer'], executive: ['admin', 'viewer'], register: ['admin', 'satker', 'viewer'], satker: ['admin', 'viewer'],
   documents: ['admin', 'viewer'], ocr: ['admin', 'viewer'], dataregister: ['admin', 'viewer'], update: ['admin', 'satker'],
-  verification: ['admin'], users: ['admin'], master: ['admin'], audit: ['admin']
+  verification: ['admin'], grc: ['admin', 'viewer'], users: ['admin'], master: ['admin'], audit: ['admin']
 };
 const canSee = r => (PAGE_ACCESS[r] || []).includes(cu().role);
 const NAV = [
@@ -433,6 +433,7 @@ const NAV = [
   { group: 'Dokumen', items: [{ id: 'documents', label: 'Dokumen Rujukan', icon: 'file' }, { id: 'ocr', label: 'OCR & Extraction', icon: 'scan' }, { id: 'dataregister', label: 'Register', icon: 'database' }] },
   { group: 'Pelaksanaan', items: [{ id: 'update', label: 'Update Satker', icon: 'pencil' }] },
   { group: 'Verifikasi', items: [{ id: 'verification', label: 'Verifikasi Admin', icon: 'shield' }] },
+  { group: 'Integrasi', items: [{ id: 'grc', label: 'Integrasi SI-GRC', icon: 'layers' }] },
   { group: 'Administration', items: [{ id: 'users', label: 'User', icon: 'users' }, { id: 'master', label: 'Master Data', icon: 'sliders' }, { id: 'audit', label: 'Audit Trail', icon: 'history' }] }
 ];
 function navBadge(id) {
@@ -441,6 +442,7 @@ function navBadge(id) {
   if (id === 'update' && isRole('satker')) { const n = visiblePlans().filter(a => canUpdate(a) && (a.verificationStatus === 'Perlu Perbaikan' || a.verificationStatus === 'Ditolak' || execStatus(a) === 'Terlambat' || a.progress === 0)).length; return n ? `<span class="nb hot">${n}</span>` : ''; }
   if (id === 'documents') { const n = appState.documents.filter(d => d.ocr_status !== 'Selesai').length; return n ? `<span class="nb">${n}</span>` : ''; }
   if (id === 'ocr') { const n = appState.documents.filter(d => d.extraction_status === 'Perlu Review').length; return n ? `<span class="nb hot">${n}</span>` : ''; }
+  if (id === 'grc') { const n = isRole('admin') ? grcPending().length : 0; return n ? `<span class="nb hot">${n}</span>` : ''; }
   if (id === 'register') return `<span class="nb">${visiblePlans().length}</span>`;
   return '';
 }
@@ -733,9 +735,10 @@ function openLink(link) {
   if (!link) return;
   if (link.type === 'plan') { if (!findPlan(link.id)) return toast('Rencana aksi sudah tidak tersedia.', 'warn'); go(cu().role === 'satker' ? 'update' : 'register'); openDrawer(link.id); }
   else if (link.type === 'verify') { go('verification'); if (typeof openReview === 'function' && findPlan(link.id)) openReview(link.id); }
+  else if (link.type === 'grc') { go(canSee('grc') ? 'grc' : 'dashboard'); }
   else if (link.type === 'doc') { if (!findDoc(link.id)) return toast('Dokumen sudah dihapus.', 'warn'); go(canSee('ocr') ? 'ocr' : 'dashboard', { doc: link.id }); }
 }
-function resetRegFilters() { Object.assign(ui.reg, { q: '', bidang: '', satker: '', status: '', ver: '', assign: '', prog: '', rdkFrom: '', rdkTo: '', targetTo: '', priority: '', near: 0, page: 1 }); }
+function resetRegFilters() { Object.assign(ui.reg, { q: '', bidang: '', satker: '', status: '', ver: '', assign: '', prog: '', rdkFrom: '', rdkTo: '', targetTo: '', priority: '', strat: '', near: 0, page: 1 }); }
 
 function bindGlobalEvents() {
   document.addEventListener('click', e => {

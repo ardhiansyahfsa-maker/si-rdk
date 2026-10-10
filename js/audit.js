@@ -6,6 +6,7 @@ function logColor(l) {
   if (l.action === 'Verifikasi') return l.newValue === 'Disetujui' ? 'green' : l.newValue === 'Ditolak' ? 'red' : 'violet';
   if (l.action === 'Status Otomatis' || l.action === 'Hapus Dokumen') return 'red';
   if (l.action === 'Submit Verifikasi') return 'amber';
+  if (l.action === 'Kirim ke SI-GRC' || l.action === 'Klasifikasi Strategis') return 'violet';
   if (['Update Progress', 'Update Status', 'Upload Bukti', 'Simpan Draft'].includes(l.action)) return 'green';
   if (['Login', 'Logout', 'Export Data', 'Cetak Laporan'].includes(l.action)) return 'grey';
   return '';
@@ -30,6 +31,8 @@ function logNarrative(l) {
     case 'Update Status': return `${u} mengubah status ${e} menjadi ${esc(l.newValue)}`;
     case 'Simpan Draft': return `${u} menyimpan draft update ${e}`;
     case 'Hapus Dokumen': return `${u} menghapus dokumen ${esc(l.entity)}`;
+    case 'Kirim ke SI-GRC': return `${u} mengalirkan ${e} ke SI-GRC sebagai input profil risiko satker`;
+    case 'Klasifikasi Strategis': return `${u} mengubah klasifikasi ${e}: ${esc(l.newValue)}`;
     case 'Edit Ekstraksi': return `${u} mengoreksi hasil ekstraksi ${e}`;
     default: return `${u} · ${esc(l.action)} ${e}`;
   }

@@ -5,7 +5,7 @@
    opened, so "Terlambat" and "mendekati deadline" stay meaningful in demos.
    ========================================================================= */
 
-const SEED_VERSION = 5;
+const SEED_VERSION = 6;
 
 const ROLE_LABEL = { admin: 'Admin / MRDK', satker: 'Satker Pelaksana', viewer: 'Viewer / Pimpinan' };
 
@@ -187,7 +187,7 @@ function buildSeed() {
       evidence: [], submissions: [], draft: null,
       updateDate: uOff != null ? D(uOff) : '', latestUpdate: x.tl || '',
       createdAt, updatedAt: uOff != null ? T(uOff, 15, 20) : createdAt,
-      overdueNotified: false
+      overdueNotified: false, strategic: false, grc: null
     };
     doc.saved_plan_ids.push(id);
 
@@ -233,6 +233,36 @@ function buildSeed() {
     }
   });
 
+  // Penugasan strategis OJK-wide → dialirkan ke SI-GRC (input profil risiko satker pengampu)
+  // [planIdx, kategori, alasan dampak, sinkron: 'cur' | 'stale' | null, hari sinkron, kondisi saat dikirim (untuk 'stale')]
+  const G = [
+    [0, 'Risiko Strategis', 'Kerangka pengawasan market conduct digital berlaku lintas seluruh sektor PUJK.', 'cur', -2],
+    [3, 'Risiko Reputasi', 'Rekomendasi Komisi XI DPR RI; menyangkut kepercayaan publik terhadap pengawasan OJK.', 'stale', -9, { progress: 35, verificationStatus: 'Belum Diverifikasi' }],
+    [4, 'Risiko Strategis', 'Penyehatan BPR/BPRS berdampak pada stabilitas sistem dan arah kebijakan pengawasan OJK.', 'cur', -9],
+    [7, 'Risiko Operasional', 'Deteksi dini pinjol ilegal menopang pelindungan konsumen nasional lintas sektor.', 'stale', -25, { progress: 40, targetDate: D(10) }],
+    [11, 'Risiko Strategis', 'Skema penjaminan polis memerlukan keputusan kebijakan lintas lembaga (OJK–LPS).', null],
+    [12, 'Risiko Strategis', 'Bursa karbon merupakan agenda nasional dengan eksposur kebijakan OJK-wide.', 'cur', -5],
+    [17, 'Risiko Kepatuhan', 'Ketentuan baru pasca peralihan pengawasan aset kripto dari Bappebti.', null],
+    [19, 'Risiko Strategis', 'Hasil stress test D-SIB menjadi masukan kebijakan stabilitas sektor jasa keuangan.', 'cur', -70],
+    [21, 'Risiko Kepatuhan', 'Tindak lanjut rekomendasi BPK RI atas pengawasan berbasis risiko lintas satker.', 'cur', -10],
+    [23, 'Risiko Operasional', 'Modul edukasi akan digunakan seluruh Kantor OJK di daerah.', null]
+  ];
+  const grcLog = []; let grcSeq = 0;
+  G.slice().sort((a, b) => (a[4] ?? 0) - (b[4] ?? 0)).forEach(([idx, category, note, sync, day, then]) => {
+    const ap = actionPlans[idx];
+    ap.strategic = true; ap.grc = { category, note };
+    log(sync ? T(day - 1, 9, 30 + (idx % 20)) : T(-1, 9, 30 + (idx % 20)), 'Ardhiansyah K', 'admin', 'Klasifikasi Strategis', ap.id, 'Non-strategis', 'Strategis (SI-GRC)', `${category} · ${note}`);
+    if (!sync) return;
+    const snap = sync === 'stale' ? { ...ap, ...then } : ap;
+    const at = T(day, 16, 5 + (idx % 40));
+    const riskId = `GRC-RI-2026-${String(++grcSeq).padStart(4, '0')}`;
+    const lv = grcSignal(snap).level;
+    Object.assign(ap.grc, { riskId, syncedAt: at, fp: grcFingerprint(snap), level: lv, by: 'Ardhiansyah K' });
+    log(at, 'Ardhiansyah K', 'admin', 'Kirim ke SI-GRC', ap.id, 'Antrian Kirim', 'Tersinkron', `${riskId} · input baru · sinyal risiko ${lv}`);
+    grcLog.push({ id: 'SYNC-' + String(grcSeq).padStart(4, '0'), at, by: 'Ardhiansyah K', endpoint: 'POST /api/grc/v1/risk-inputs', refs: [ap.id], result: [`${ap.id}: 201 Created`], payload: [{ ...grcPayload(snap), risk_input_id: riskId }] });
+  });
+  grcLog.sort((a, b) => b.at.localeCompare(a.at));
+
   // Extraction snapshots for already-processed documents (what the LLM produced at the time)
   documents.forEach(d => {
     if (d.ocr_status !== 'Selesai') return;
@@ -260,6 +290,7 @@ function buildSeed() {
   note(['admin'], 'Dokumen baru "Laporan Singkat RDP Komisi XI - Pelindungan Konsumen Asuransi.pdf" siap diproses.', 'info', { type: 'doc', id: 'DOC-2026-011' }, documents[10].upload_date);
   note(['admin', 'viewer'], 'Departemen Pengawasan Pasar Modal melakukan update progress RA-2026-014 menjadi 100%.', 'ok', { type: 'plan', id: 'RA-2026-014' }, actionPlans[13].updatedAt);
   note(['satker:Direktorat Market Conduct'], 'RA-2026-002 telah disetujui Admin MRDK.', 'ok', { type: 'plan', id: 'RA-2026-002' }, actionPlans[1].submissions[0].resultAt);
+  note(['admin'], 'Data pelaksanaan 2 penugasan strategis berubah sejak dikirim ke SI-GRC — perlu sinkron ulang.', 'warn', { type: 'grc' }, T(0, 7, 30));
   notifications.sort((a, b) => b.at.localeCompare(a.at));
 
   return {
@@ -267,8 +298,8 @@ function buildSeed() {
     seededAt: new Date().toISOString(),
     users: DEMO_USERS.map(u => ({ ...u })),
     masters: { satker: MASTER_SATKER.map(s => ({ ...s })), topics: [...MASTER_TOPICS], sources: [...DOC_SOURCES], types: [...DOC_TYPES] },
-    documents, actionPlans, notifications, auditLogs,
-    seq: { doc: documents.length, ra: actionPlans.length, log: logSeq, notif: nSeq }
+    documents, actionPlans, notifications, auditLogs, grcLog,
+    seq: { doc: documents.length, ra: actionPlans.length, log: logSeq, notif: nSeq, grc: grcSeq, grcLog: grcSeq }
   };
 }
 
