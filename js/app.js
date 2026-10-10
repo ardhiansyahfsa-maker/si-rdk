@@ -637,13 +637,14 @@ function renderLogin(err = '', prefill = {}) {
       <div>
         <div><span style="display:inline-block;background:#fff;border-radius:10px;padding:8px 12px"><img class="logo-img " src="assets/logo-ojk.png?v=9" alt="Otoritas Jasa Keuangan" style="height:44px"></span></div>
         <h1 style="margin-top:34px">SI-RDK Terintegrasi</h1>
+        <p class="login-sub">Dashboard Pemantauan Arahan / Penugasan Dewan Komisioner &amp; Hasil Rapat dengan Mitra Strategis OJK</p>
       </div>
       <p class="login-tagline">Membangun OJK yang Responsif dan Akuntabel</p>
       <div style="font-size:11.5px;color:#7F95AA">Prototipe untuk demonstrasi. Autentikasi, OCR, dan LLM disimulasikan.</div>
     </section>
     <section class="login-main">
       <form class="login-card" id="login-form" novalidate>
-        <div><img class="logo-img " src="assets/logo-ojk.png?v=9" alt="Otoritas Jasa Keuangan" style="height:44px;display:block"><div style="margin-top:14px"><h2>Masuk ke SI-RDK Terintegrasi</h2><div class="small muted">Sistem Informasi Rapat Dewan Komisioner Dashboard Pemantauan Strategis</div></div></div>
+        <div><img class="logo-img " src="assets/logo-ojk.png?v=9" alt="Otoritas Jasa Keuangan" style="height:44px;display:block"><div style="margin-top:14px"><h2>Masuk ke SI-RDK Terintegrasi</h2><div class="small muted">Sistem Informasi Rapat Dewan Komisioner Terintegrasi</div></div></div>
         ${err ? `<div class="login-err" role="alert">${esc(err)}</div>` : ''}
         <div class="field"><label for="lg-user">Username</label><input class="input" id="lg-user" autocomplete="username" value="${esc(prefill.username || '')}" placeholder="mis. admin"></div>
         <div class="field"><label for="lg-pass">Password</label><input class="input" id="lg-pass" type="password" autocomplete="current-password" value="${esc(prefill.password || '')}" placeholder="••••••••"></div>
