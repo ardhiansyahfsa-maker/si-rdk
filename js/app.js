@@ -196,7 +196,7 @@ const satkerInfo = name => appState.masters.satker.find(s => s.name === name);
 /** Business rule §31.1 / §31.4 / §31.5 — may the current user submit an update for this plan? */
 function updateLock(ap) {
   const u = cu();
-  if (u.role !== 'satker') return u.role === 'viewer' || u.role === 'grc' ? 'Mode baca saja' : 'Update dilakukan oleh Satker';
+  if (u.role !== 'satker') return ['viewer', 'grc', 'rqo'].includes(u.role) ? 'Mode baca saja' : 'Update dilakukan oleh Satker';
   if (ap.satker !== u.satker) return 'Bukan tanggung jawab Satker Anda';
   if (ap.verificationStatus === 'Menunggu Verifikasi') return 'Menunggu Verifikasi';
   if (ap.progress >= 100 && ap.verificationStatus === 'Disetujui') return 'Selesai & Disetujui';
@@ -239,7 +239,7 @@ function notify(to, text, kind, link) {
 }
 function notifsForUser() {
   const u = cu(); if (!u.username) return [];
-  return appState.notifications.filter(n => n.to.includes('all') || n.to.includes(u.role) || (u.role === 'satker' && n.to.includes('satker:' + u.satker)));
+  return appState.notifications.filter(n => n.to.includes('all') || n.to.includes(u.role) || (u.role === 'satker' && n.to.includes('satker:' + u.satker)) || (u.role === 'rqo' && n.to.includes('rqo:' + u.satker)));
 }
 const unreadCount = () => notifsForUser().filter(n => !n.readBy.includes(cu().username)).length;
 
@@ -422,9 +422,9 @@ const wrapLabel = (s, n = 22) => { const w = String(s).split(' '); const out = [
 const Pages = {};
 function registerPage(id, def) { Pages[id] = def; }
 const PAGE_ACCESS = {
-  dashboard: ['admin', 'satker', 'viewer', 'grc'], executive: ['admin', 'viewer'], register: ['admin', 'satker', 'viewer', 'grc'], satker: ['admin', 'viewer'],
+  dashboard: ['admin', 'satker', 'viewer', 'grc', 'rqo'], executive: ['admin', 'viewer'], register: ['admin', 'satker', 'viewer', 'grc', 'rqo'], satker: ['admin', 'viewer'],
   documents: ['admin', 'viewer'], ocr: ['admin', 'viewer'], dataregister: ['admin', 'viewer'], update: ['admin', 'satker'],
-  verification: ['admin'], grc: ['admin', 'viewer', 'satker', 'grc'], users: ['admin'], master: ['admin'], audit: ['admin']
+  verification: ['admin'], grc: ['admin', 'viewer', 'satker', 'grc', 'rqo'], users: ['admin'], master: ['admin'], audit: ['admin']
 };
 const canSee = r => (PAGE_ACCESS[r] || []).includes(cu().role);
 const NAV = [
@@ -459,7 +459,7 @@ function renderNav() {
   if (u.role === 'satker') bn.push({ id: 'update', label: 'Update', icon: 'pencil' });
   if (u.role === 'admin') bn.push({ id: 'documents', label: 'Dokumen', icon: 'file' }, { id: 'verification', label: 'Verifikasi', icon: 'shield' });
   if (u.role === 'viewer') bn.push({ id: 'executive', label: 'Eksekutif', icon: 'gauge' });
-  if (u.role === 'grc' || u.role === 'satker') bn.push({ id: 'grc', label: 'SI-GRC', icon: 'layers' });
+  if (['grc', 'rqo', 'satker'].includes(u.role)) bn.push({ id: 'grc', label: 'SI-GRC', icon: 'layers' });
   $('#bottomnav').innerHTML = bn.map(b => {
     const nb = navBadge(b.id).replace('class="nb hot"', 'class="nb"');
     return `<button class="bn ${ui.route === b.id ? 'on' : ''}" data-act="go" data-route="${b.id}">${icon(b.icon)}<span>${esc(b.label)}</span>${b.id === 'register' ? '' : nb}</button>`;
@@ -663,7 +663,8 @@ function renderLogin(err = '', prefill = {}) {
             <button type="button" class="demo-acc" data-demo="admin|admin123|admin"><b>Admin / MRDK</b><span>admin</span></button>
             <button type="button" class="demo-acc" data-demo="satker|satker123|satker"><b>Satker</b><span>satker</span></button>
             <button type="button" class="demo-acc" data-demo="viewer|viewer123|viewer"><b>Viewer</b><span>viewer</span></button>
-            <button type="button" class="demo-acc" data-demo="grc|grc123|grc"><b>Validator SI-GRC</b><span>grc</span></button>
+            <button type="button" class="demo-acc" data-demo="grc|grc123|grc"><b>Admin SI-GRC</b><span>grc</span></button>
+            <button type="button" class="demo-acc" data-demo="rqo|rqo123|rqo"><b>RQO Satker</b><span>rqo</span></button>
           </div></div>
       </form>
     </section></div>`;
@@ -685,7 +686,7 @@ function doLogin(username, password, role) {
   audit('Login', 'Sesi', '-', ROLE_LABEL[u.role]);
   scanOverdue(); saveState();
   showApp();
-  go(u.role === 'grc' ? 'grc' : 'dashboard');
+  go(['grc', 'rqo'].includes(u.role) ? 'grc' : 'dashboard');
   toast(`Selamat datang, ${firstName(u.name)}.`, 'info');
 }
 function logout(silent) {

@@ -11,10 +11,10 @@ Aplikasi web statis (HTML, CSS, JavaScript) tanpa proses build.
 Catatan: data aplikasi tersimpan di localStorage browser masing-masing pengguna.
 
 ## Integrasi SI-GRC (simulasi)
-Penugasan **strategis berdampak OJK-wide** dialirkan ke SI-GRC sebagai input profil risiko satker pengampu melalui 4 tahap:
-1. **Usulan MRDK** (admin) – klasifikasi strategis, kategori risiko, alasan dampak.
-2. **Tanggapan Satker** (pemilik risiko) – setuju / keberatan + catatan mitigasi.
-3. **Pengiriman MRDK** – ke kotak validasi SI-GRC; keberatan satker / pengembalian wajib dijustifikasi.
-4. **Validasi SI-GRC** (fungsi manajemen risiko, akun `grc` / `grc123`) – terima atau kembalikan; menetapkan kategori & level yang dicatat.
+Penugasan **strategis berdampak OJK-wide** dialirkan ke SI-GRC sebagai input profil risiko satker pengampu:
+1. **Penandaan strategis** – Admin MRDK (SI-RDK).
+2. **Kirim ke SI-GRC** – Admin MRDK (SI-RDK).
+3. **Pengelompokan risiko & input profil risiko satker** – Admin SI-GRC (akun demo `grc` / `grc123`).
+4. **Konfirmasi Risk & Quality Officer satker** – di SI-GRC (akun demo `rqo` / `rqo123`, Departemen Pengawasan Bank) → **Selesai**.
 
-Hanya input yang diterima validator yang tercatat di profil risiko. Menu: **Integrasi → Integrasi SI-GRC**. Kontrak data: `grcPayload()` di `js/grc.js`.
+Tahap 3–4 terjadi di SI-GRC; SI-RDK menerima status baliknya. Menu: **Integrasi → Integrasi SI-GRC**. Kontrak data: `grcPayload()` di `js/grc.js`.
