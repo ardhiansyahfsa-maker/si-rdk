@@ -5,9 +5,9 @@
    opened, so "Terlambat" and "mendekati deadline" stay meaningful in demos.
    ========================================================================= */
 
-const SEED_VERSION = 9;
+const SEED_VERSION = 10;
 
-const ROLE_LABEL = { admin: 'Admin / MRDK', satker: 'Satker Pelaksana', viewer: 'Viewer / Pimpinan', grc: 'Admin SI-GRC', rqo: 'Risk & Quality Officer' };
+const ROLE_LABEL = { admin: 'Admin / MRDK', satker: 'Satker Pelaksana', viewer: 'Pimpinan' };
 
 const MASTER_SATKER = [
   { key: 'DMC', name: 'Direktorat Market Conduct', bidang: 'Pengawasan Perilaku PUJK', pic: 'Budi Santoso' },
@@ -40,8 +40,6 @@ const DEMO_USERS = [
   { username: 'viewer', password: 'viewer123', name: 'Hendra Gunawan', role: 'viewer', satker: null, title: 'Kepala Eksekutif', active: true },
   { username: 'satker.dpb', password: 'satker123', name: 'Sari Indrawati', role: 'satker', satker: 'Departemen Pengawasan Bank', title: 'PIC Departemen Pengawasan Bank', active: true },
   { username: 'satker.dlik', password: 'satker123', name: 'Dimas Prasetyo', role: 'satker', satker: 'Departemen Literasi dan Inklusi Keuangan', title: 'PIC Departemen Literasi dan Inklusi Keuangan', active: true },
-  { username: 'grc', password: 'grc123', name: 'Rudi Hartono', role: 'grc', satker: null, title: 'Admin SI-GRC · Manajemen Risiko', active: true },
-  { username: 'rqo', password: 'rqo123', name: 'Lina Marlina', role: 'rqo', satker: 'Departemen Pengawasan Bank', title: 'Risk & Quality Officer · Departemen Pengawasan Bank', active: true },
   { username: 'mrdk.2', password: 'admin123', name: 'Yoga Pratama', role: 'admin', satker: null, title: 'Staf MRDK', active: false }
 ];
 
@@ -269,12 +267,12 @@ function buildSeed() {
     if (!x.m) return;
     const [category, riskName, level, md] = x.m;
     g.mapping = { category, riskName, level, note: '', by: GA, at: T(md, 10, 15 + (idx % 40)) }; g.stage = 'mapped';
-    log(g.mapping.at, GA, 'grc', 'Pengelompokan Risiko (SI-GRC)', ap.id, 'Menunggu Pengelompokan Risiko', 'Menunggu Konfirmasi RQO', `${g.riskId} · ${category} · ${riskName} · level ${level}`);
+    log(g.mapping.at, 'SI-GRC · ' + GA, 'system', 'Pengelompokan Risiko (SI-GRC)', ap.id, 'Menunggu Pengelompokan Risiko', 'Menunggu Konfirmasi RQO', `${g.riskId} · ${category} · ${riskName} · level ${level}`);
     if (x.c == null) return;
     const by = rqoOf(ap.satker); const at = T(x.c, 13, 20 + (idx % 30));
     g.confirm = { by, at, note: '' }; g.stage = 'confirmed';
     g.recorded = { category, level, riskName, at }; g.doneFp = grcFingerprint(snap);
-    log(at, by, 'rqo', 'Konfirmasi RQO (SI-GRC)', ap.id, 'Menunggu Konfirmasi RQO', 'Selesai', `${g.riskId} · tercatat ${category} level ${level}`);
+    log(at, 'SI-GRC · ' + by, 'system', 'Konfirmasi RQO (SI-GRC)', ap.id, 'Menunggu Konfirmasi RQO', 'Selesai', `${g.riskId} · tercatat ${category} level ${level}`);
   });
   grcLog.sort((a, b) => a.at.localeCompare(b.at)).forEach(l => { l.id = 'SYNC-' + String(++syncSeq).padStart(4, '0'); });
   grcLog.reverse();
@@ -307,8 +305,6 @@ function buildSeed() {
   note(['admin', 'viewer'], 'Departemen Pengawasan Pasar Modal melakukan update progress RA-2026-014 menjadi 100%.', 'ok', { type: 'plan', id: 'RA-2026-014' }, actionPlans[13].updatedAt);
   note(['satker:Direktorat Market Conduct'], 'RA-2026-002 telah disetujui Admin MRDK.', 'ok', { type: 'plan', id: 'RA-2026-002' }, actionPlans[1].submissions[0].resultAt);
   note(['admin'], '4 penugasan strategis siap/perlu dikirim ke SI-GRC.', 'warn', { type: 'grc' }, T(0, 7, 30));
-  note(['grc'], '2 penugasan strategis dari SI-RDK menunggu pengelompokan risiko (RA-2026-008, RA-2026-012).', 'warn', { type: 'grc' }, T(-1, 15, 10));
-  note(['rqo:Departemen Pengawasan Bank'], 'Mohon konfirmasi: 2 penugasan telah diinput Admin SI-GRC ke profil risiko Satker Anda (RA-2026-003, RA-2026-022).', 'warn', { type: 'grc' }, T(-2, 10, 30));
   notifications.sort((a, b) => b.at.localeCompare(a.at));
 
   return {

@@ -9,7 +9,8 @@
      4. Konfirmasi RQO      — Risk & Quality Officer satker mengonfirmasi        (SI-GRC)
      → Selesai: tercatat di profil risiko satker.
    Tahap 3–4 terjadi di SI-GRC; di SI-RDK tampil sebagai status balik (callback).
-   Untuk demonstrasi, akun Admin SI-GRC dan RQO dapat menyimulasikannya di sini.
+   Hak akses SI-RDK tetap tiga peran (Admin MRDK, Satker, Pimpinan). Untuk demo,
+   Admin MRDK dapat menyimulasikan status balik SI-GRC (tombol "Simulasi SI-GRC").
    ========================================================================= */
 
 const GRC_CATEGORIES = ['Risiko Strategis', 'Risiko Operasional', 'Risiko Kepatuhan', 'Risiko Reputasi', 'Risiko Hukum'];
@@ -49,22 +50,22 @@ function grcStatus(ap) {
 const GRC_SENDABLE = ['Siap Dikirim', 'Perlu Sinkron Ulang'];
 function grcPlans() {
   const all = appState.actionPlans.filter(a => a.strategic);
-  return ['satker', 'rqo'].includes(cu().role) ? all.filter(a => a.satker === cu().satker) : all;
+  return cu().role === 'satker' ? all.filter(a => a.satker === cu().satker) : all;
 }
 /** Item yang menunggu tindakan peran yang sedang login. */
 function grcTodo() {
   const r = cu().role;
   if (r === 'admin') return grcPlans().filter(a => GRC_SENDABLE.includes(grcStatus(a)));
-  if (r === 'grc') return grcPlans().filter(a => grcStatus(a) === 'Menunggu Pengelompokan Risiko');
-  if (r === 'rqo') return grcPlans().filter(a => grcStatus(a) === 'Menunggu Konfirmasi RQO');
   return [];
 }
 const grcPending = grcTodo;
 const sigTag = lv => `<span class="prio ${lv}">${lv.toUpperCase()}</span>`;
 const strategicTag = () => `<span class="badge b-violet" title="Penugasan strategis berdampak OJK-wide — dialirkan ke SI-GRC">Strategis · SI-GRC</span>`;
 const canSendGRC = ap => isRole('admin') && GRC_SENDABLE.includes(grcStatus(ap));
-const canMapGRC = ap => isRole('grc') && grcStatus(ap) === 'Menunggu Pengelompokan Risiko';
-const canConfirmGRC = ap => isRole('rqo') && ap.satker === cu().satker && grcStatus(ap) === 'Menunggu Konfirmasi RQO';
+/* Simulasi status balik SI-GRC (demo) — hanya Admin MRDK */
+const canMapGRC = ap => isRole('admin') && grcStatus(ap) === 'Menunggu Pengelompokan Risiko';
+const canConfirmGRC = ap => isRole('admin') && grcStatus(ap) === 'Menunggu Konfirmasi RQO';
+const GRC_SYS = { name: 'SI-GRC', role: 'system' };
 
 /** Kontrak data yang dikirim SI-RDK ke SI-GRC (satu record per penugasan). Kategori risiko TIDAK dikirim — ditetapkan Admin SI-GRC. */
 function grcPayload(ap) {
@@ -99,7 +100,6 @@ async function sendToGRC(ids) {
     Object.assign(g, { stage: 'sent', sentAt: now, sentBy: cu().name, mapping: null, confirm: null });
     audit('Kirim ke SI-GRC', ap.id, prev, 'Menunggu Pengelompokan Risiko', `${g.riskId} · ${g.recorded ? 'pembaruan' : 'input baru'}`);
   });
-  notify(['grc'], `${plans.length} penugasan strategis dari SI-RDK menunggu pengelompokan risiko (${plans.map(a => a.id).join(', ')}).`, 'warn', { type: 'grc' });
   appState.grcLog = appState.grcLog || [];
   appState.seq.grcLog = (appState.seq.grcLog || 0) + 1;
   appState.grcLog.unshift({ id: 'SYNC-' + String(appState.seq.grcLog).padStart(4, '0'), at: now, by: cu().name, endpoint: GRC_ENDPOINT, refs: plans.map(a => a.id), result: res.map(r => `${r.source_ref}: ${r.http} Accepted`), payload });
@@ -122,7 +122,6 @@ Actions.grcClassify = el => {
       if (on === was && note === (g.note || '')) { m.close(); return; }
       ap.strategic = on; ap.grc = { ...g, note, stage: g.stage || 'flagged', flaggedAt: g.flaggedAt || new Date().toISOString(), flaggedBy: g.flaggedBy || cu().name };
       if (on !== was) audit('Tandai Strategis', ap.id, was ? 'Strategis OJK-wide' : 'Non-strategis', on ? 'Strategis OJK-wide' : 'Dicabut', note);
-      if (!on && g.recorded) notify(['grc'], `MRDK mencabut tanda strategis ${ap.id} (${g.riskId}). Mohon tinjau input pada profil risiko ${ap.satker}.`, 'info', { type: 'grc' });
       m.close(); toast(on ? (ap.satker ? 'Ditandai strategis · siap dikirim ke SI-GRC.' : 'Ditandai strategis. Tetapkan satker agar dapat dikirim.') : 'Tanda strategis dicabut.'); commit();
     } }]
   });
@@ -136,11 +135,11 @@ Actions.grcSync = el => {
 
 /* ------------------------------ Tahap 3 · Admin SI-GRC (simulasi) -------- */
 Actions.grcMap = el => {
-  const ap = findPlan(el.dataset.id); if (!ap || !canMapGRC(ap)) return toast('Pengelompokan risiko dilakukan oleh Admin SI-GRC.', 'error');
+  const ap = findPlan(el.dataset.id); if (!ap || !canMapGRC(ap)) return;
   const g = ap.grc; const s = grcSignal(ap); const prev = g.recorded || {};
   openModal({
-    title: 'Pengelompokan Risiko & Input Profil Risiko', sub: `<span class="mono">${g.riskId}</span> · ${ap.id} · ${esc(ap.satker)}`,
-    body: `<div class="ai-banner" style="margin-bottom:12px">${icon('info')}<span>Simulasi tindakan di <b>SI-GRC</b>. Hasilnya dikirim balik ke SI-RDK sebagai status.</span></div>
+    title: 'Simulasi SI-GRC · Pengelompokan Risiko', sub: `<span class="mono">${g.riskId}</span> · ${ap.id} · ${esc(ap.satker)}`,
+    body: `<div class="ai-banner" style="margin-bottom:12px">${icon('info')}<span><b>Demo.</b> Tahap ini dilakukan Admin SI-GRC di aplikasi SI-GRC; di sini disimulasikan untuk menghasilkan status balik ke SI-RDK.</span></div>
       <dl class="kv" style="margin-bottom:14px">
         <dt>Penugasan</dt><dd>${esc(ap.arahan)}</dd>
         ${g.note ? `<dt>Catatan MRDK</dt><dd>${esc(g.note)}</dd>` : ''}
@@ -154,26 +153,25 @@ Actions.grcMap = el => {
         <div class="field span-2"><label for="gm-name">Risiko pada profil risiko satker <span class="req">*</span></label><input class="input" id="gm-name" value="${esc(prev.riskName || '')}" placeholder="Mis. Keterlambatan penyelesaian kebijakan …"></div>
         <div class="field span-2"><label for="gm-note">Catatan Admin SI-GRC <span class="small muted">(opsional)</span></label><textarea class="textarea" id="gm-note" style="min-height:56px"></textarea></div>
       </div>`,
-    foot: [{ label: 'Batal', cls: 'ghost' }, { label: 'Input ke Profil Risiko', cls: 'primary', icon: 'save', onClick: m => {
+    foot: [{ label: 'Batal', cls: 'ghost' }, { label: 'Simulasikan', cls: 'primary', icon: 'save', onClick: m => {
       const category = $('#gm-cat', m.el).value, level = $('#gm-lv', m.el).value, riskName = $('#gm-name', m.el).value.trim(), note = $('#gm-note', m.el).value.trim();
       if (!category) { $('#gm-cat', m.el).classList.add('invalid'); return toast('⚠ Kategori risiko wajib dipilih.', 'error'); }
       if (!riskName) { $('#gm-name', m.el).classList.add('invalid'); return toast('⚠ Risiko pada profil risiko wajib diisi.', 'error'); }
-      g.mapping = { category, level, riskName, note, by: cu().name, at: new Date().toISOString() }; g.stage = 'mapped';
-      audit('Pengelompokan Risiko (SI-GRC)', ap.id, 'Menunggu Pengelompokan Risiko', 'Menunggu Konfirmasi RQO', `${g.riskId} · ${category} · ${riskName} · level ${level}${note ? ' · ' + note : ''}`);
-      notify(['rqo:' + ap.satker], `Mohon konfirmasi: ${ap.id} telah diinput Admin SI-GRC ke profil risiko Satker Anda (${category}, ${level}).`, 'warn', { type: 'plan', id: ap.id });
-      notify(['admin'], `${ap.id} dikelompokkan Admin SI-GRC sebagai ${category} — menunggu konfirmasi RQO ${satkerShort(ap.satker)}.`, 'info', { type: 'plan', id: ap.id });
-      m.close(); toast('Diinput ke profil risiko satker · menunggu konfirmasi RQO.'); commit();
+      g.mapping = { category, level, riskName, note, by: 'Admin SI-GRC', at: new Date().toISOString() }; g.stage = 'mapped';
+      audit('Pengelompokan Risiko (SI-GRC)', ap.id, 'Menunggu Pengelompokan Risiko', 'Menunggu Konfirmasi RQO', `${g.riskId} · ${category} · ${riskName} · level ${level}${note ? ' · ' + note : ''}`, GRC_SYS);
+      notify(['admin', 'satker:' + ap.satker], `${ap.id} dikelompokkan Admin SI-GRC sebagai ${category} — menunggu konfirmasi RQO ${satkerShort(ap.satker)}.`, 'info', { type: 'plan', id: ap.id });
+      m.close(); toast('Status SI-GRC diterima: menunggu konfirmasi RQO.'); commit();
     } }]
   });
 };
 
 /* ------------------------------ Tahap 4 · RQO Satker (simulasi) ---------- */
 Actions.grcConfirm = el => {
-  const ap = findPlan(el.dataset.id); if (!ap || !canConfirmGRC(ap)) return toast('Konfirmasi dilakukan oleh Risk & Quality Officer satker pemilik risiko.', 'error');
+  const ap = findPlan(el.dataset.id); if (!ap || !canConfirmGRC(ap)) return;
   const g = ap.grc; const mp = g.mapping;
   openModal({
-    title: 'Konfirmasi Risk & Quality Officer', sub: `<span class="mono">${g.riskId}</span> · ${ap.id} · ${esc(ap.satker)}`, size: 'sm',
-    body: `<div class="ai-banner" style="margin-bottom:12px">${icon('info')}<span>Simulasi tindakan di <b>SI-GRC</b>.</span></div>
+    title: 'Simulasi SI-GRC · Konfirmasi RQO', sub: `<span class="mono">${g.riskId}</span> · ${ap.id} · ${esc(ap.satker)}`, size: 'sm',
+    body: `<div class="ai-banner" style="margin-bottom:12px">${icon('info')}<span><b>Demo.</b> Konfirmasi dilakukan Risk & Quality Officer satker di aplikasi SI-GRC.</span></div>
       <dl class="kv">
         <dt>Penugasan</dt><dd>${esc(ap.arahan)}</dd>
         <dt>Kategori risiko</dt><dd>${esc(mp.category)}</dd>
@@ -184,11 +182,11 @@ Actions.grcConfirm = el => {
       <div class="field" style="margin-top:12px"><label for="gq-note">Catatan RQO <span class="small muted">(opsional)</span></label><textarea class="textarea" id="gq-note" style="min-height:56px"></textarea></div>`,
     foot: [{ label: 'Batal', cls: 'ghost' }, { label: 'Konfirmasi', cls: 'primary', icon: 'checkCircle', onClick: m => {
       const note = $('#gq-note', m.el).value.trim(); const now = new Date().toISOString();
-      g.confirm = { by: cu().name, at: now, note }; g.stage = 'confirmed';
+      g.confirm = { by: `RQO ${satkerShort(ap.satker)}`, at: now, note }; g.stage = 'confirmed';
       g.recorded = { category: mp.category, level: mp.level, riskName: mp.riskName, at: now }; g.doneFp = grcFingerprint(ap);
-      audit('Konfirmasi RQO (SI-GRC)', ap.id, 'Menunggu Konfirmasi RQO', 'Selesai', `${g.riskId} · tercatat ${mp.category} level ${mp.level}${note ? ' · ' + note : ''}`);
-      notify(['admin', 'grc', 'satker:' + ap.satker], `${ap.id} selesai: tercatat di profil risiko ${satkerShort(ap.satker)} (${mp.category}, ${mp.level}).`, 'ok', { type: 'plan', id: ap.id });
-      m.close(); toast('Dikonfirmasi · tercatat di profil risiko satker.'); commit();
+      audit('Konfirmasi RQO (SI-GRC)', ap.id, 'Menunggu Konfirmasi RQO', 'Selesai', `${g.riskId} · tercatat ${mp.category} level ${mp.level}${note ? ' · ' + note : ''}`, GRC_SYS);
+      notify(['admin', 'viewer', 'satker:' + ap.satker], `${ap.id} selesai: tercatat di profil risiko ${satkerShort(ap.satker)} (${mp.category}, ${mp.level}).`, 'ok', { type: 'plan', id: ap.id });
+      m.close(); toast('Status SI-GRC diterima: selesai, tercatat di profil risiko satker.'); commit();
     } }]
   });
 };
@@ -214,8 +212,8 @@ Actions.grcStage = el => { ui.grc.status = ui.grc.status === el.dataset.s ? '' :
 function grcActionButtons(ap, size = 'sm') {
   const b = [];
   if (canSendGRC(ap)) b.push(`<button class="btn ${size} primary" data-act="grcSync" data-id="${ap.id}">${icon('send', 'sm')}${grcStatus(ap) === 'Perlu Sinkron Ulang' ? 'Kirim pembaruan' : 'Kirim'}</button>`);
-  if (canMapGRC(ap)) b.push(`<button class="btn ${size} primary" data-act="grcMap" data-id="${ap.id}">${icon('layers', 'sm')}Kelompokkan</button>`);
-  if (canConfirmGRC(ap)) b.push(`<button class="btn ${size} primary" data-act="grcConfirm" data-id="${ap.id}">${icon('checkCircle', 'sm')}Konfirmasi</button>`);
+  if (canMapGRC(ap)) b.push(`<button class="btn ${size} ghost" data-act="grcMap" data-id="${ap.id}" title="Demo: simulasikan status balik dari SI-GRC">${icon('rerun', 'sm')}Simulasi SI-GRC</button>`);
+  if (canConfirmGRC(ap)) b.push(`<button class="btn ${size} ghost" data-act="grcConfirm" data-id="${ap.id}" title="Demo: simulasikan konfirmasi RQO di SI-GRC">${icon('rerun', 'sm')}Simulasi SI-GRC</button>`);
   return b.join('');
 }
 function grcStepsHTML(ap) {
@@ -293,18 +291,16 @@ const GRC_STAGE_CARDS = [
 registerPage('grc', {
   render() {
     const role = cu().role; const all = grcPlans(); const todo = grcTodo(); const f = ui.grc;
-    const prof = grcProfileRows(); const logs = ['satker', 'rqo'].includes(role) ? [] : (appState.grcLog || []).slice(0, 12);
+    const prof = grcProfileRows(); const logs = role === 'satker' ? [] : (appState.grcLog || []).slice(0, 12);
     const bulk = all.filter(a => GRC_SENDABLE.includes(grcStatus(a))).length;
     const roleNote = {
       admin: 'Anda menandai penugasan strategis dan mengirimnya ke SI-GRC.',
-      grc: '<b>Simulasi sisi SI-GRC:</b> Anda mengelompokkan penugasan ke risiko yang sesuai dan menginputnya ke profil risiko satker.',
-      rqo: `<b>Simulasi sisi SI-GRC:</b> Anda mengonfirmasi input pada profil risiko <b>${esc(cu().satker || '')}</b>.`,
       satker: 'Mode baca: status penugasan Satker Anda yang dialirkan ke SI-GRC.', viewer: 'Mode baca saja.'
     }[role] || '';
-    const todoLabel = { admin: 'siap/perlu dikirim ke SI-GRC', grc: 'menunggu pengelompokan risiko', rqo: 'menunggu konfirmasi Anda' }[role];
+    const todoLabel = { admin: 'siap/perlu dikirim ke SI-GRC' }[role];
     return `<div class="page">
       <div class="page-head"><div><div class="crumb">Integrasi · SI-GRC</div><h1>Integrasi SI-GRC</h1><div class="sub">Penugasan <b>strategis yang berdampak OJK-wide</b> dialirkan ke SI-GRC sebagai input <b>profil risiko satuan kerja pengampu</b>. ${roleNote}</div></div>
-        <div class="btn-group">${['satker', 'rqo'].includes(role) ? '' : exportButtons('grc')}${role === 'admin' ? `<button class="btn primary" data-act="grcSync" ${bulk ? '' : 'disabled'}>${icon('send')}Kirim ${bulk ? bulk + ' ' : ''}ke SI-GRC</button>` : ''}</div></div>
+        <div class="btn-group">${role === 'satker' ? '' : exportButtons('grc')}${role === 'admin' ? `<button class="btn primary" data-act="grcSync" ${bulk ? '' : 'disabled'}>${icon('send')}Kirim ${bulk ? bulk + ' ' : ''}ke SI-GRC</button>` : ''}</div></div>
       ${todo.length && todoLabel ? `<div class="ai-banner warn">${icon('bell')}<span><b>${todo.length} penugasan ${todoLabel}:</b> ${todo.slice(0, 6).map(a => `<button class="link-btn mono" data-act="openPlan" data-id="${a.id}">${a.id}</button>`).join(', ')}${todo.length > 6 ? ' …' : ''}</span></div>` : ''}
       <section class="panel flow" aria-label="Tahapan pengaliran data ke SI-GRC">
         <div class="flow-top"><div class="section-label">Tahapan</div>
@@ -329,11 +325,11 @@ registerPage('grc', {
         <div class="toolbar">
           <div class="grow">${icon('search')}<input class="input" placeholder="Cari ID, poin arahan, satker, kategori/risiko, ID SI-GRC…" value="${esc(f.q)}" data-input="grcSearch"></div>
           <select class="select sm" id="gf-status" data-change="grcFilter" aria-label="Status">${optList(GRC_STATUSES, f.status, 'Semua status')}</select>
-          ${['satker', 'rqo'].includes(role) ? '' : `<select class="select sm" id="gf-satker" data-change="grcFilter" aria-label="Satker">${optList([...new Set(grcPlans().map(a => a.satker).filter(Boolean))].sort(), f.satker, 'Semua satker')}</select>`}
+          ${role === 'satker' ? '' : `<select class="select sm" id="gf-satker" data-change="grcFilter" aria-label="Satker">${optList([...new Set(grcPlans().map(a => a.satker).filter(Boolean))].sort(), f.satker, 'Semua satker')}</select>`}
         </div>
         <div id="grc-table">${grcTableHTML()}</div>
       </section>
-      ${logs.length || ['admin', 'grc', 'viewer'].includes(role) ? `<section class="panel"><div class="panel-head"><div><h3>Log Pengiriman SI-RDK → SI-GRC</h3><div class="desc">Riwayat pengiriman (simulasi) · ${esc(GRC_ENDPOINT)}</div></div></div>
+      ${role !== 'satker' ? `<section class="panel"><div class="panel-head"><div><h3>Log Pengiriman SI-RDK → SI-GRC</h3><div class="desc">Riwayat pengiriman (simulasi) · ${esc(GRC_ENDPOINT)}</div></div></div>
         ${logs.length ? `<div class="tbl-wrap has-cards"><table class="rt cards"><thead><tr><th>ID</th><th>Waktu</th><th>Oleh</th><th>Penugasan</th><th>Respons</th><th></th></tr></thead><tbody>
           ${logs.map(l => `<tr><td data-label="ID"><span class="mono small">${l.id}</span></td><td data-label="Waktu"><span class="nowrap tnum">${fmtDT(l.at)}</span></td><td data-label="Oleh">${esc(l.by)}</td><td data-label="Penugasan" class="full"><span class="small">${l.refs.map(r => `<span class="mono">${r}</span>`).join(', ')}</span></td><td data-label="Respons"><span class="badge b-green">${l.result.length} diterima SI-GRC</span></td><td data-label=""><button class="btn xs" data-act="grcLogView" data-id="${l.id}">${icon('eye', 'sm')}Payload</button></td></tr>`).join('')}
         </tbody></table></div>` : '<div class="empty"><b>Belum ada pengiriman</b>Riwayat akan muncul setelah data dikirim ke SI-GRC.</div>'}
