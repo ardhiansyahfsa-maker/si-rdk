@@ -5,17 +5,29 @@
    opened, so "Terlambat" and "mendekati deadline" stay meaningful in demos.
    ========================================================================= */
 
-const SEED_VERSION = 11;
+const SEED_VERSION = 12;
 
 const ROLE_LABEL = { admin: 'Admin / MRDK', satker: 'Satker Pelaksana', viewer: 'Pimpinan' };
 
+const MASTER_BIDANG = [
+  { code: 'KSAR', name: 'Kebijakan Strategis, Audit Internal, dan Manajemen Risiko' },
+  { code: 'MS', name: 'Manajemen Strategis' },
+  { code: 'PBKN', name: 'Pengawasan Perbankan' },
+  { code: 'PMDK', name: 'Pengawasan Pasar Modal, Keuangan Derivatif, dan Bursa Karbon' },
+  { code: 'PPDP', name: 'Pengawasan Perusahaan Asuransi dan Dana Pensiun' },
+  { code: 'PVML', name: 'Pengawasan Perusahaan Pembiayaan, Modal Ventura, Keuangan Mikro, dan Lembaga Jasa Keuangan Lainnya' },
+  { code: 'IAKD', name: 'Inovasi Teknologi Sektor Keuangan, Aset Keuangan Digital, Aset Kripto' },
+  { code: 'PEPK', name: 'Pengawasan Perilaku Pelaku Usaha Jasa Keuangan dan Pelindungan Konsumen' },
+  { code: 'BMKS', name: 'Pengawasan Bursa Mineral dan Komoditas Strategis' }
+];
+
 const MASTER_SATKER = [
-  { key: 'DMC', name: 'Direktorat Market Conduct', bidang: 'Pengawasan Perilaku PUJK', pic: 'Budi Santoso' },
+  { key: 'DMC', name: 'Direktorat Market Conduct', bidang: 'Pengawasan Perilaku Pelaku Usaha Jasa Keuangan dan Pelindungan Konsumen', pic: 'Budi Santoso' },
   { key: 'DPB', name: 'Departemen Pengawasan Bank', bidang: 'Pengawasan Perbankan', pic: 'Sari Indrawati' },
-  { key: 'DPPM', name: 'Departemen Pengawasan Pasar Modal', bidang: 'Pengawasan Pasar Modal', pic: 'Arief Rahman' },
-  { key: 'DIKNB', name: 'Departemen Pengawasan Asuransi dan Dana Pensiun', bidang: 'Pengawasan PPDP', pic: 'Maya Kusuma' },
-  { key: 'DLIK', name: 'Departemen Literasi dan Inklusi Keuangan', bidang: 'Edukasi dan Pelindungan Konsumen', pic: 'Dimas Prasetyo' },
-  { key: 'DITSK', name: 'Departemen Pengawasan ITSK dan Aset Kripto', bidang: 'Pengawasan ITSK dan Aset Kripto', pic: 'Nadia Putri' }
+  { key: 'DPPM', name: 'Departemen Pengawasan Pasar Modal', bidang: 'Pengawasan Pasar Modal, Keuangan Derivatif, dan Bursa Karbon', pic: 'Arief Rahman' },
+  { key: 'DIKNB', name: 'Departemen Pengawasan Asuransi dan Dana Pensiun', bidang: 'Pengawasan Perusahaan Asuransi dan Dana Pensiun', pic: 'Maya Kusuma' },
+  { key: 'DLIK', name: 'Departemen Literasi dan Inklusi Keuangan', bidang: 'Pengawasan Perilaku Pelaku Usaha Jasa Keuangan dan Pelindungan Konsumen', pic: 'Dimas Prasetyo' },
+  { key: 'DITSK', name: 'Departemen Pengawasan ITSK dan Aset Kripto', bidang: 'Inovasi Teknologi Sektor Keuangan, Aset Keuangan Digital, Aset Kripto', pic: 'Nadia Putri' }
 ];
 
 const MASTER_TOPICS = [
@@ -54,7 +66,7 @@ const EXTRACTION_LIBRARY = {
     items: [
       { arahan: 'Memperkuat mekanisme pengawasan terhadap aktivitas jasa keuangan digital dan meningkatkan perlindungan konsumen.', satker: 'Direktorat Market Conduct', tindakLanjut: 'Pengembangan mekanisme monitoring dan evaluasi.', priority: 'Tinggi', days: 90 },
       { arahan: 'Melakukan evaluasi atas efektivitas penanganan pengaduan konsumen pada PUJK sektor perbankan.', satker: 'Departemen Pengawasan Bank', tindakLanjut: 'Penyusunan kerangka evaluasi dan pengumpulan data pengaduan.', priority: 'Sedang', days: 120 },
-      { arahan: 'Menyusun kajian kebutuhan pengaturan atas layanan Buy Now Pay Later (BNPL) dan paylater perbankan.', satker: '', bidang: 'Pengawasan PPDP', tindakLanjut: 'Menunggu penetapan satker penanggung jawab.', priority: 'Sedang', days: 150 }
+      { arahan: 'Menyusun kajian kebutuhan pengaturan atas layanan Buy Now Pay Later (BNPL) dan paylater perbankan.', satker: '', bidang: 'Pengawasan Perusahaan Pembiayaan, Modal Ventura, Keuangan Mikro, dan Lembaga Jasa Keuangan Lainnya', tindakLanjut: 'Menunggu penetapan satker penanggung jawab.', priority: 'Sedang', days: 150 }
     ]
   },
   asuransi: {
@@ -151,7 +163,7 @@ function buildSeed() {
     [8, 'DPB', 'Memantau eksposur perbankan terhadap sektor properti dan komoditas.', 90, 'Ditolak', 25, 'Sedang', -5, { prev: 75, tl: 'Pemantauan bulanan eksposur 40 bank terbesar.', vn: 'Data eksposur yang dilampirkan masih posisi Juni. Mohon gunakan posisi terkini.' }],
     [9, 'DPB', 'Menindaklanjuti rekomendasi BPK terkait dokumentasi proses pengawasan berbasis risiko.', 65, 'Perlu Perbaikan', -15, 'Tinggi', -11, { prev: 40, tl: 'Penyempurnaan SOP dokumentasi RBS; 3 dari 5 rekomendasi telah ditindaklanjuti.', vn: 'Lampirkan bukti penetapan SOP dan surat penyampaian ke BPK.' }],
     [9, 'DMC', 'Memperbaiki mekanisme pengenaan sanksi administratif dan pemantauan pembayaran denda.', 25, 'Belum Diverifikasi', 40, 'Sedang', -16, { tl: 'Pemetaan proses bisnis pengenaan sanksi administratif.' }],
-    [10, null, 'Menyusun modul edukasi keuangan berbasis kearifan lokal untuk Kantor OJK di daerah.', 0, 'Belum Diverifikasi', 80, 'Sedang', null, { bidang: 'Edukasi dan Pelindungan Konsumen' }],
+    [10, null, 'Menyusun modul edukasi keuangan berbasis kearifan lokal untuk Kantor OJK di daerah.', 0, 'Belum Diverifikasi', 80, 'Sedang', null, { bidang: 'Pengawasan Perilaku Pelaku Usaha Jasa Keuangan dan Pelindungan Konsumen' }],
     [10, 'DMC', 'Mengevaluasi efektivitas penanganan pengaduan konsumen pada PUJK di daerah.', 30, 'Perlu Perbaikan', 28, 'Sedang', -6, { prev: 10, tl: 'Evaluasi pada 6 Kantor OJK daerah.', vn: 'Mohon lengkapi data pengaduan per kantor dan lampirkan rekap tindak lanjut.' }]
   ];
 
@@ -356,7 +368,7 @@ function buildSeed() {
     version: SEED_VERSION,
     seededAt: new Date().toISOString(),
     users: DEMO_USERS.map(u => ({ ...u })),
-    masters: { satker: MASTER_SATKER.map(s => ({ ...s })), topics: [...MASTER_TOPICS], sources: [...DOC_SOURCES], types: [...DOC_TYPES] },
+    masters: { bidang: MASTER_BIDANG.map(b => ({ ...b })), satker: MASTER_SATKER.map(s => ({ ...s })), topics: [...MASTER_TOPICS], sources: [...DOC_SOURCES], types: [...DOC_TYPES] },
     documents, actionPlans, notifications, auditLogs, grcLog,
     seq: { doc: documents.length, ra: actionPlans.length, log: logSeq, notif: nSeq, grc: grcSeq, grcLog: syncSeq }
   };

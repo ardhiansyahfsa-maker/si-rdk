@@ -189,8 +189,8 @@ function drawDashboardCharts(plans) {
   const bidang = [...new Set(plans.map(a => a.bidang || 'Belum ditetapkan'))];
   mkChart('ch-stack', {
     type: 'bar',
-    data: { labels: bidang.map(b => wrapLabel(b, 16)), datasets: order.map(s => ({ label: s, data: bidang.map(b => plans.filter(a => (a.bidang || 'Belum ditetapkan') === b && execStatus(a) === s).length), backgroundColor: STATUS_COLOR[s], borderRadius: 2, maxBarThickness: 34 })) },
-    options: { plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 10, boxHeight: 10 } }, tooltip: { mode: 'index' } }, scales: { x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 0 } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#EEF2F5' } } },
+    data: { labels: bidang.map(b => bidangCode(b) || wrapLabel(b, 16)), datasets: order.map(s => ({ label: s, data: bidang.map(b => plans.filter(a => (a.bidang || 'Belum ditetapkan') === b && execStatus(a) === s).length), backgroundColor: STATUS_COLOR[s], borderRadius: 2, maxBarThickness: 34 })) },
+    options: { plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 10, boxHeight: 10 } }, tooltip: { mode: 'index', callbacks: { title: c => bidang[c[0].dataIndex] } } }, scales: { x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 0 } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#EEF2F5' } } },
       onClick: (e, els) => { if (els.length) applyQuickFilter('bidang:' + bidang[els[0].index]); } }
   });
 

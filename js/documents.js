@@ -294,7 +294,7 @@ function ocrRawText(doc) {
 }
 function confTag(v) { if (v == null) return ''; const p = Math.round(v * 100); return `<span class="conf ${p < 85 ? 'mid' : ''}" title="Tingkat keyakinan model">${p}%</span>`; }
 function exItemHTML(it, i, edit, doc) {
-  const sats = appState.masters.satker; const bidangs = [...new Set(sats.map(s => s.bidang))];
+  const sats = appState.masters.satker; const bidangs = bidangList().map(b => b.name);
   const ro = (k, v) => `<div class="dl ${k === 'arahan' || k === 'tindakLanjut' || k === 'topic' ? 'span-2' : ''}"><dt>${EX_FIELDS.find(f => f[0] === k)[1]} ${confTag(it.conf?.[k])}</dt><dd>${v}</dd></div>`;
   const inp = (k, html) => `<div class="field ${k === 'arahan' || k === 'tindakLanjut' || k === 'topic' ? 'span-2' : ''}"><label for="ex-${i}-${k}">${EX_FIELDS.find(f => f[0] === k)[1]}</label>${html}</div>`;
   const body = edit ? `<div class="form-grid">

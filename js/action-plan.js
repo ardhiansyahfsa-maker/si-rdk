@@ -10,7 +10,7 @@ const PLAN_COLS = {
   rdk: { label: 'Tanggal RDK', sort: 'rdkDate', cell: a => `<span class="nowrap tnum">${fmtDate(a.rdkDate)}</span>` },
   topic: { label: 'Topik', sort: 'topic', cell: a => `<span class="clamp-2" style="min-width:140px;max-width:200px">${esc(a.topic)}</span>` },
   arahan: { label: 'Poin Arahan', cls: 'arahan', full: true, cell: a => `<span class="clamp-2">${esc(a.arahan)}</span>` },
-  bidang: { label: 'Bidang', sort: 'bidang', cell: a => `<span style="display:block;min-width:120px">${esc(a.bidang || '—')}</span>` },
+  bidang: { label: 'Bidang', sort: 'bidang', cell: a => `<span style="display:block;min-width:120px">${bidangCell(a.bidang)}</span>` },
   satker: { label: 'Satker', sort: 'satker', cell: a => a.satker ? `<span style="display:block;min-width:130px">${esc(a.satker)}</span>` : '<span class="muted">—</span>' },
   assign: { label: 'Status Penugasan', sort: 'assign', cell: a => badge(assignStatus(a)) },
   status: { label: 'Status Pelaksanaan', sort: 'status', cell: a => badge(execStatus(a)) },
@@ -117,7 +117,7 @@ registerPage('register', {
         <div class="filters" id="reg-adv" ${f.showFilters ? '' : 'hidden'}>
           <div class="field"><label for="rf-rdkFrom">Tanggal RDK dari</label><input class="input sm" type="date" id="rf-rdkFrom" value="${esc(f.rdkFrom)}" data-change="regFilter"></div>
           <div class="field"><label for="rf-rdkTo">Tanggal RDK s.d.</label><input class="input sm" type="date" id="rf-rdkTo" value="${esc(f.rdkTo)}" data-change="regFilter"></div>
-          <div class="field"><label for="rf-bidang">Bidang</label><select class="select sm" id="rf-bidang" data-change="regFilter">${optList([...new Set(ms.satker.map(s => s.bidang))], f.bidang, 'Semua bidang')}</select></div>
+          <div class="field"><label for="rf-bidang">Bidang</label><select class="select sm" id="rf-bidang" data-change="regFilter">${optList(bidangList().map(b => b.name), f.bidang, 'Semua bidang')}</select></div>
           <div class="field"><label for="rf-assign">Status penugasan</label><select class="select sm" id="rf-assign" data-change="regFilter">${optList(ASSIGN_STATUSES, f.assign, 'Semua')}</select></div>
           <div class="field"><label for="rf-prog">Progress</label><select class="select sm" id="rf-prog" data-change="regFilter"><option value="">Semua</option>${[['0', '0% (belum mulai)'], ['1-49', '1–49%'], ['50-99', '50–99%'], ['100', '100%']].map(([v, l]) => `<option value="${v}" ${f.prog === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
           <div class="field"><label for="rf-targetTo">Target selesai s.d.</label><input class="input sm" type="date" id="rf-targetTo" value="${esc(f.targetTo)}" data-change="regFilter"></div>
@@ -282,7 +282,7 @@ Actions.viewEvidence = el => {
 Actions.assignPlan = el => {
   if (!isRole('admin')) return toast('Hanya Admin / MRDK yang dapat mengubah penugasan.', 'error');
   const ap = findPlan(el.dataset.id); if (!ap) return;
-  const sats = appState.masters.satker; const bidangs = [...new Set(sats.map(s => s.bidang))];
+  const sats = appState.masters.satker; const bidangs = bidangList().map(b => b.name);
   openModal({
     title: 'Ubah Penugasan', sub: `<span class="mono">${ap.id}</span> · ${esc(ap.arahan.slice(0, 80))}${ap.arahan.length > 80 ? '…' : ''}`,
     body: `<div class="form-grid">

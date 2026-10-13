@@ -192,6 +192,9 @@ function visiblePlans() { const u = cu(); return u.role === 'satker' ? appState.
 const findPlan = id => appState.actionPlans.find(a => a.id === id);
 const findDoc = id => appState.documents.find(d => d.document_id === id);
 const satkerInfo = name => appState.masters.satker.find(s => s.name === name);
+const bidangList = () => appState.masters.bidang || MASTER_BIDANG;
+const bidangCode = name => (bidangList().find(b => b.name === name) || {}).code || '';
+const bidangCell = name => name ? `<b style="font-weight:600">${esc(bidangCode(name) || '—')}</b><div class="small muted clamp-2">${esc(name)}</div>` : '—';
 
 /** Business rule §31.1 / §31.4 / §31.5 — may the current user submit an update for this plan? */
 function updateLock(ap) {
@@ -424,12 +427,12 @@ function registerPage(id, def) { Pages[id] = def; }
 const PAGE_ACCESS = {
   dashboard: ['admin', 'satker', 'viewer'], executive: ['admin', 'viewer'], register: ['admin', 'satker', 'viewer'], satker: ['admin', 'viewer'],
   documents: ['admin', 'viewer'], ocr: ['admin', 'viewer'], dataregister: ['admin', 'viewer'], update: ['admin', 'satker'],
-  verification: ['admin'], trajectory: ['admin', 'satker', 'viewer'], grc: ['admin', 'viewer', 'satker'], users: ['admin'], master: ['admin'], audit: ['admin']
+  verification: ['admin'], trajectory: ['admin', 'satker', 'viewer'], rekap: ['admin', 'viewer'], grc: ['admin', 'viewer', 'satker'], users: ['admin'], master: ['admin'], audit: ['admin']
 };
 const canSee = r => (PAGE_ACCESS[r] || []).includes(cu().role);
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
-  { group: 'Monitoring', items: [{ id: 'executive', label: 'Executive Dashboard', icon: 'gauge' }, { id: 'register', label: 'Rencana Aksi', icon: 'list' }, { id: 'trajectory', label: 'Prioritas & Trajectory', icon: 'target' }, { id: 'satker', label: 'Progress Satker', icon: 'bars' }] },
+  { group: 'Monitoring', items: [{ id: 'executive', label: 'Executive Dashboard', icon: 'gauge' }, { id: 'register', label: 'Rencana Aksi', icon: 'list' }, { id: 'trajectory', label: 'Prioritas & Trajectory', icon: 'target' }, { id: 'satker', label: 'Progress Satker', icon: 'bars' }, { id: 'rekap', label: 'Rekap & Laporan', icon: 'sheet' }] },
   { group: 'Dokumen', items: [{ id: 'documents', label: 'Dokumen Rujukan', icon: 'file' }, { id: 'ocr', label: 'OCR & Extraction', icon: 'scan' }, { id: 'dataregister', label: 'Register', icon: 'database' }] },
   { group: 'Pelaksanaan', items: [{ id: 'update', label: 'Update Satker', icon: 'pencil' }] },
   { group: 'Verifikasi', items: [{ id: 'verification', label: 'Verifikasi Admin', icon: 'shield' }] },
@@ -569,7 +572,7 @@ async function saveFile(filename, blob) {
     return true;
   } catch (e) { toast('Browser menolak unduhan.', 'error'); return false; }
 }
-async function exportData({ name, sheet = 'Data', columns, rows, format }) {
+async function exportData({ name, sheet = 'Data', columns, rows, format, extraSheets = [] }) {
   if (!rows.length) { toast('Tidak ada data untuk diekspor dengan filter saat ini.', 'warn'); return; }
   const stamp = todayISO().replace(/-/g, '');
   const header = columns.map(c => c.label);
@@ -581,6 +584,7 @@ async function exportData({ name, sheet = 'Data', columns, rows, format }) {
     ws['!cols'] = columns.map(c => ({ wch: c.w || 16 }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, sheet.slice(0, 31));
+    extraSheets.forEach(x => { const w2 = XLSX.utils.aoa_to_sheet([x.columns.map(c => c.label), ...x.rows.map(r => x.columns.map(c => { const v = c.get(r); return v == null ? '' : v; }))]); w2['!cols'] = x.columns.map(c => ({ wch: c.w || 16 })); XLSX.utils.book_append_sheet(wb, w2, x.sheet.slice(0, 31)); });
     const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     ok = await saveFile(`${name}_${stamp}.xlsx`, new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
   } else {

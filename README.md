@@ -15,6 +15,13 @@ Catatan: data aplikasi tersimpan di localStorage browser masing-masing pengguna.
 ## Hak akses
 Tiga peran: **Admin MRDK** (`admin` / `admin123`), **Satker** (`satker` / `satker123`), **Pimpinan** (`viewer` / `viewer123`).
 
+## Rekap & Laporan
+Menu **Monitoring → Rekap & Laporan** (Admin MRDK, Pimpinan): rekap bertingkat **9 bidang OJK → satuan kerja**
+yang dihasilkan langsung dari data SI-RDK Terintegrasi.
+- Posisi data: hari ini, akhir TW, atau tanggal tertentu.
+- Basis progres: **terverifikasi MRDK** (default; update terakhir yang disetujui) atau dilaporkan satker.
+- Ekspor Excel 3 sheet: *Rekap Bidang & Satker*, *Rekap Bidang*, *Rincian Penugasan*; juga CSV dan cetak.
+
 ## Prioritas & Trajectory
 Menu **Monitoring → Prioritas & Trajectory**:
 1. **Admin MRDK** menetapkan **Urgensi** dan **Dampak** (Tinggi/Sedang/Rendah) → kuadran P1 Kritis · P2 Tinggi · P3 Sedang · P4 Rendah.
