@@ -5,7 +5,7 @@
    opened, so "Terlambat" and "mendekati deadline" stay meaningful in demos.
    ========================================================================= */
 
-const SEED_VERSION = 18;
+const SEED_VERSION = 19;
 
 const ROLE_LABEL = { admin: 'Admin / MRDK', satker: 'Satker Pelaksana', viewer: 'Pimpinan' };
 
@@ -120,6 +120,15 @@ const EXTRACTION_LIBRARY = {
       { arahan: 'Mempercepat penyelesaian klaim pemegang polis pada perusahaan asuransi bermasalah dan memastikan transparansi informasi kepada konsumen.', satker: 'Departemen Pengawasan Asuransi dan Jasa Penunjang', tindakLanjut: 'Penyusunan rencana penyelesaian klaim dan publikasi status penanganan.', priority: 'Atensi Tinggi', days: 60 },
       { arahan: 'Memperketat pengawasan produk asuransi yang dikaitkan dengan investasi (PAYDI), termasuk pemasaran melalui bancassurance.', satker: 'Departemen Pengawasan Asuransi dan Jasa Penunjang', tindakLanjut: 'Pemeriksaan tematik pemasaran PAYDI pada bank mitra.', priority: 'Atensi Tinggi', days: 90 },
       { arahan: 'Meningkatkan edukasi kepada masyarakat mengenai hak dan kewajiban pemegang polis.', satker: 'Departemen Literasi, Inklusi Keuangan, dan Komunikasi', tindakLanjut: 'Penyusunan materi edukasi dan kampanye digital.', priority: 'Pemantauan Reguler', days: 120 }
+    ]
+  },
+  lpbbti: {
+    topic: 'Pengawasan Pinjaman Daring dan Pembiayaan',
+    items: [
+      { arahan: 'Memperketat pengawasan penyelenggara LPBBTI terkait tingkat wanprestasi (TWP90) dan pemenuhan ekuitas minimum, termasuk penegakan sanksi atas penyelenggara yang tidak memenuhi ketentuan.', satker: 'Departemen Pengawasan Perilaku Pelaku Usaha Jasa Keuangan', tindakLanjut: 'Pemeriksaan tematik penyelenggara dengan TWP90 di atas ambang batas.', priority: 'Atensi Tinggi', days: 90 },
+      { arahan: 'Mengevaluasi praktik pembiayaan Buy Now Pay Later oleh perusahaan pembiayaan dan dampaknya terhadap kualitas pembiayaan rumah tangga.', satker: 'Departemen Pengawasan Lembaga Pembiayaan, Perusahaan Modal Ventura dan Lembaga Keuangan Khusus', tindakLanjut: 'Analisis portofolio BNPL dan penyusunan rekomendasi pengaturan.', priority: 'Pemantauan Reguler', days: 120 },
+      { arahan: 'Memperkuat penanganan pengaduan konsumen pinjaman daring, khususnya terkait praktik penagihan yang tidak beretika dan penyalahgunaan data pribadi.', satker: 'Departemen Pengawasan Perilaku Pelaku Usaha Jasa Keuangan', tindakLanjut: 'Penyusunan mekanisme eskalasi pengaduan penagihan.', priority: 'Atensi Tinggi', days: 60 },
+      { arahan: 'Menyampaikan laporan perkembangan tindak lanjut kepada Komisi XI DPR RI pada rapat kerja berikutnya.', satker: '', bidang: 'Pengawasan Perusahaan Pembiayaan, Modal Ventura, Keuangan Mikro, dan Lembaga Jasa Keuangan Lainnya', tindakLanjut: 'Penyusunan bahan laporan perkembangan.', priority: 'Pemantauan Reguler', days: 150 }
     ]
   },
   bank: {
@@ -401,6 +410,41 @@ function buildSeed() {
         conf: confidences(d.document_id + a.id)
       }))
     };
+  });
+
+  /* ---- SIPENA: laporan singkat DPR + disposisi ADK (ditarik otomatis) ----
+     Disposisi dibentuk per bidang dari satker penanggung jawab; RA-2026-005
+     sengaja dibuat menyimpang (disposisi ke DPKP, ditugaskan ke DRPD). */
+  const bCode = name => (MASTER_BIDANG.find(b => b.name === name) || {}).code || '';
+  const DISP_ISI = 'Mohon ditindaklanjuti sesuai kewenangan dan dilaporkan perkembangannya melalui SI-RDK.';
+  const DISP_OVERRIDE = { 'RA-2026-005': 'DPKP' };
+  let dispSeq = 840, agendaSeq = 8100;
+  documents.forEach((d, i) => {
+    if (d.source !== 'Komisi XI DPR RI') return;
+    const spec = docSpecs[i];
+    d.uploaded_by = 'SIPENA (otomatis)';
+    const plans = actionPlans.filter(a => a.documentId === d.document_id);
+    const targets = spec.pending
+      ? ['DAJP', 'DPPP', 'DPLK'].map(k => satkerByKey[k])
+      : plans.map(a => a.satker ? (DISP_OVERRIDE[a.id] ? satkerByKey[DISP_OVERRIDE[a.id]] : MASTER_SATKER.find(s => s.name === a.satker)) : null).filter(Boolean);
+    const byB = {};
+    targets.forEach(s => { (byB[s.bidang] = byB[s.bidang] || []); if (!byB[s.bidang].includes(s.name)) byB[s.bidang].push(s.name); });
+    const dispDate = D(spec.rdk + 2);
+    const agenda = `SIPENA-2026-0${(agendaSeq += 37)}`;
+    d.sipena = {
+      agenda, receivedAt: T(spec.up, 7, 40), pulledAt: d.upload_date,
+      disp: Object.entries(byB).map(([b, to]) => ({ no: `DISP-${++dispSeq}/${bCode(b)}/2026`, date: dispDate, from: 'ADK Bidang ' + bCode(b), to, isi: DISP_ISI }))
+    };
+    log(d.upload_date, 'Sistem SIPENA', 'system', 'Tarik SIPENA', d.document_id, '-', `${agenda} · ${d.sipena.disp.length} disposisi`, d.sipena.disp.map(x => `${x.from} → ${x.to.map(n => MASTER_SATKER.find(s => s.name === n).key).join(', ')}`).join('; '));
+    plans.forEach(a => {
+      const x = d.sipena.disp.find(y => y.to.includes(a.satker));
+      a.disp = { agenda, no: x?.no || '', from: x?.from || '', date: x?.date || '' };
+      if (a.satker && !x) {
+        const tg = d.sipena.disp.flatMap(y => y.to);
+        a.dispDeviation = { note: 'Objek arahan (BPR/BPRS dengan permodalan di bawah ketentuan) berada dalam pengawasan DRPD; dialihkan dari DPKP setelah koordinasi dengan Kepala Departemen terkait.', by: 'Ardhiansyah K', at: a.createdAt, targets: tg };
+        log(a.createdAt, 'Ardhiansyah K', 'admin', 'Penugasan di Luar Disposisi', a.id, 'Tujuan disposisi: ' + tg.map(n => MASTER_SATKER.find(s => s.name === n).key).join(', '), a.satker, a.dispDeviation.note);
+      }
+    });
   });
 
   auditLogs.sort((a, b) => a.ts.localeCompare(b.ts));

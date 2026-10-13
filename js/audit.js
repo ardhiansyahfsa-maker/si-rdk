@@ -10,6 +10,8 @@ function logColor(l) {
   if (l.action === 'Persetujuan Trajectory') return l.newValue === 'Disetujui' ? 'green' : 'violet';
   if (['Penetapan Atensi', 'Ajukan Trajectory'].includes(l.action)) return 'amber';
   if (l.action === 'Usulan Penyesuaian Atensi') return 'violet';
+  if (l.action === 'Penugasan di Luar Disposisi') return 'red';
+  if (l.action === 'Tarik SIPENA') return '';
   if (['Kirim ke SI-GRC', 'Tandai Strategis', 'Pengelompokan Risiko (SI-GRC)'].includes(l.action)) return 'violet';
   if (['Update Progress', 'Update Status', 'Upload Bukti', 'Simpan Draft'].includes(l.action)) return 'green';
   if (['Login', 'Logout', 'Export Data', 'Cetak Laporan'].includes(l.action)) return 'grey';
@@ -41,6 +43,8 @@ function logNarrative(l) {
     case 'Ajukan Trajectory': return `${u} mengajukan trajectory ${e}`;
     case 'Persetujuan Trajectory': return `${u} ${l.newValue === 'Disetujui' ? 'menyetujui' : 'mengembalikan'} trajectory ${e}`;
     case 'Tandai Strategis': return `${u} ${l.newValue === 'Dicabut' ? 'mencabut tanda strategis' : 'menandai'} ${e}${l.newValue === 'Dicabut' ? '' : ' sebagai penugasan strategis OJK-wide'}`;
+    case 'Tarik SIPENA': return `${u} menarik laporan singkat ${e} dari SIPENA (${esc(String(l.newValue))})`;
+    case 'Penugasan di Luar Disposisi': return `${u} menugaskan ${e} ke ${esc(satkerShort(String(l.newValue)))} di luar tujuan disposisi ADK`;
     case 'Kirim ke SI-GRC': return `${u} mengirim ${e} ke SI-GRC`;
     case 'Pengelompokan Risiko (SI-GRC)': return `${u} mengelompokkan ${e} dan menginput ke profil risiko satker`;
     case 'Konfirmasi RQO (SI-GRC)': return `${u} mengonfirmasi ${e} pada profil risiko satker`;

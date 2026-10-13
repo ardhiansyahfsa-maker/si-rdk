@@ -47,7 +47,7 @@ function filterPlans(plans, f) {
   const q = (f.q || '').trim().toLowerCase();
   const today = todayISO();
   return plans.filter(a => {
-    if (q && ![a.id, a.topic, a.arahan, a.satker, a.bidang, a.pic, a.documentName, a.tindakLanjut].some(v => String(v || '').toLowerCase().includes(q))) return false;
+    if (q && ![a.id, a.topic, a.arahan, a.satker, a.bidang, a.pic, a.documentName, a.tindakLanjut, a.disp?.no, a.disp?.from, a.disp?.agenda].some(v => String(v || '').toLowerCase().includes(q))) return false;
     if (f.status && !f.status.split(',').some(s => statusMatch(a, s))) return false;
     if (!inList(a.verificationStatus, f.ver)) return false;
     if (!inList(assignStatus(a), f.assign)) return false;
@@ -56,6 +56,7 @@ function filterPlans(plans, f) {
     if (f.priority && a.priority !== f.priority) return false;
     if (f.strat === 'Strategis (SI-GRC)' && !a.strategic) return false;
     if (f.strat === 'Non-strategis' && a.strategic) return false;
+    if (f.disp) { const pd = planDisp(a); if (f.disp === 'Lapsing DPR (SIPENA)' ? !pd : f.disp === 'Sesuai disposisi' ? !(pd && pd.disp) : !(pd && pd.deviated)) return false; }
     if (f.rdkFrom && a.rdkDate < f.rdkFrom) return false;
     if (f.rdkTo && a.rdkDate > f.rdkTo) return false;
     if (f.targetTo && a.targetDate > f.targetTo) return false;
@@ -80,7 +81,7 @@ function sortPlans(plans, sort) {
 function regRows() { return sortPlans(filterPlans(visiblePlans(), ui.reg), ui.reg.sort); }
 const optList = (vals, cur, all) => `<option value="">${all}</option>` + (cur && !vals.includes(cur) ? `<option value="${esc(cur)}" selected>${esc(cur.split(',').join(' / '))}</option>` : '') + vals.map(v => `<option ${v === cur ? 'selected' : ''}>${esc(v)}</option>`).join('');
 function regChips() {
-  const f = ui.reg; const L = { q: 'Kata kunci', status: 'Status', ver: 'Verifikasi', assign: 'Penugasan', satker: 'Satker', bidang: 'Bidang', priority: 'Atensi', strat: 'Klasifikasi', rdkFrom: 'RDK dari', rdkTo: 'RDK s.d.', targetTo: 'Target s.d.', prog: 'Progress', near: 'Deadline ≤' };
+  const f = ui.reg; const L = { q: 'Kata kunci', status: 'Status', ver: 'Verifikasi', assign: 'Penugasan', satker: 'Satker', bidang: 'Bidang', priority: 'Atensi', strat: 'Klasifikasi', disp: 'Disposisi', rdkFrom: 'RDK dari', rdkTo: 'RDK s.d.', targetTo: 'Target s.d.', prog: 'Progress', near: 'Deadline ≤' };
   const chips = Object.keys(L).filter(k => f[k]).map(k => {
     let v = f[k]; if (['rdkFrom', 'rdkTo', 'targetTo'].includes(k)) v = fmtDate(v); if (k === 'near') v = v + ' hari'; if (k === 'prog') v = v + '%'; if (typeof v === 'string') v = v.split(',').join(' / ');
     return `<span class="chip">${esc(L[k])}: <b>${esc(v)}</b><button data-act="regClear" data-k="${k}" aria-label="Hapus filter ${esc(L[k])}">${icon('x', 'sm')}</button></span>`;
@@ -123,6 +124,7 @@ registerPage('register', {
           <div class="field"><label for="rf-targetTo">Target selesai s.d.</label><input class="input sm" type="date" id="rf-targetTo" value="${esc(f.targetTo)}" data-change="regFilter"></div>
           <div class="field"><label for="rf-priority">Kategori atensi</label><select class="select sm" id="rf-priority" data-change="regFilter">${optList(PRIORITIES, f.priority, 'Semua')}</select></div>
           <div class="field"><label for="rf-strat">Klasifikasi</label><select class="select sm" id="rf-strat" data-change="regFilter">${optList(['Strategis (SI-GRC)', 'Non-strategis'], f.strat, 'Semua')}</select></div>
+          <div class="field"><label for="rf-disp">Disposisi SIPENA</label><select class="select sm" id="rf-disp" data-change="regFilter">${optList(['Lapsing DPR (SIPENA)', 'Sesuai disposisi', 'Di luar disposisi'], f.disp, 'Semua')}</select></div>
           <div class="field"><label>Sesi RDK</label><select class="select sm" data-change="regRdk" aria-label="Pilih sesi RDK"><option value="">Pilih tanggal…</option>${rdkDates.map(d => `<option value="${d}" ${f.rdkFrom === d && f.rdkTo === d ? 'selected' : ''}>${fmtDate(d)}</option>`).join('')}</select></div>
         </div>
         <div id="reg-table">${regTableHTML()}</div>
@@ -133,7 +135,7 @@ registerPage('register', {
 Actions.regSearch = debounce(el => { ui.reg.q = el.value; ui.reg.page = 1; refreshReg(); }, 140);
 Actions.regFilter = () => {
   const f = ui.reg;
-  ['status', 'satker', 'ver', 'rdkFrom', 'rdkTo', 'bidang', 'assign', 'prog', 'targetTo', 'priority', 'strat'].forEach(k => { const el = $('#rf-' + k); if (el) f[k] = el.value; });
+  ['status', 'satker', 'ver', 'rdkFrom', 'rdkTo', 'bidang', 'assign', 'prog', 'targetTo', 'priority', 'strat', 'disp'].forEach(k => { const el = $('#rf-' + k); if (el) f[k] = el.value; });
   f.page = 1; refreshReg();
 };
 Actions.regRdk = el => { ui.reg.rdkFrom = el.value; ui.reg.rdkTo = el.value; ui.reg.page = 1; renderPage(true); };
@@ -150,7 +152,7 @@ const PLAN_EXPORT_COLS = [
   { label: 'Kategori Atensi', get: a => legacyAtensi(a.priority), w: 18 }, { label: 'Target Selesai', get: a => a.targetDate, w: 13 }, { label: 'Status Verifikasi', get: a => a.verificationStatus, w: 18 },
   { label: 'Catatan Verifikasi', get: a => a.verificationNote, w: 40 }, { label: 'Tindak Lanjut', get: a => a.tindakLanjut, w: 50 }, { label: 'Output', get: a => a.output, w: 36 },
   { label: 'Kendala', get: a => a.kendala, w: 36 }, { label: 'Tanggal Update', get: a => a.updateDate, w: 13 }, { label: 'Tanggal Selesai', get: a => a.completedDate, w: 13 },
-  { label: 'Jumlah Bukti', get: a => a.evidence.length, w: 10 }, { label: 'Sumber Dokumen', get: a => a.documentName, w: 50 }
+  { label: 'Jumlah Bukti', get: a => a.evidence.length, w: 10 }, { label: 'Sumber Dokumen', get: a => a.documentName, w: 50 }, { label: 'Disposisi ADK (SIPENA)', get: a => dispExport(a), w: 34 }
 ];
 Exporters.register = () => ({ name: 'Register_Rencana_Aksi', sheet: 'Register RA', title: 'Register Rencana Aksi', subtitle: `${regRows().length} rencana aksi sesuai filter aktif`, rows: regRows(), columns: PLAN_EXPORT_COLS });
 
@@ -227,6 +229,7 @@ function renderPlanDetail(ap) {
         ${kv('Poin Arahan', `<div class="quote">${esc(ap.arahan)}</div>`)}
         ${kv('Sumber Dokumen', doc && canSee('ocr') ? `<button class="link-btn" data-act="viewDoc" data-id="${doc.document_id}" style="text-align:left">${esc(ap.documentName)}</button>` : esc(ap.documentName))}
       </dl></div>
+      ${dispDrawerSection(ap)}
       <div class="d-sec"><div class="section-label"><span>Penanggung Jawab</span>${isRole('admin') ? `<button class="btn xs" data-act="assignPlan" data-id="${ap.id}">${icon('users', 'sm')}Ubah penugasan</button>` : ''}</div><dl class="kv">
         ${kv('Bidang', esc(ap.bidang || '—'))}${kv('Satker', ap.satker ? esc(ap.satker) : '<span style="color:var(--warn-ink)">Belum ditugaskan</span>')}${kv('PIC', esc(ap.pic || '—'))}${kv('Status Penugasan', badge(assignStatus(ap)))}
       </dl></div>
@@ -285,8 +288,8 @@ Actions.assignPlan = el => {
   const sats = appState.masters.satker; const bidangs = bidangList().map(b => b.name);
   openModal({
     title: 'Ubah Penugasan', sub: `<span class="mono">${ap.id}</span> · ${esc(ap.arahan.slice(0, 80))}${ap.arahan.length > 80 ? '…' : ''}`,
-    body: `<div class="form-grid">
-      <div class="field span-2"><label for="as-satker">Satker penanggung jawab</label><select class="select" id="as-satker"><option value="">— Belum ditugaskan —</option>${sats.map(s => `<option ${s.name === ap.satker ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
+    body: `${(() => { const pd = planDisp(ap); return pd ? (pd.pulled ? `<div class="ai-banner" style="margin-bottom:12px">${icon('send')}<span>Laporan singkat DPR — satker mengikuti <b>disposisi ADK di SIPENA</b>: ${pd.targets.map(t => `<b>${esc(satkerShort(t))}</b>`).join(', ')}. Penugasan di luar tujuan disposisi wajib disertai alasan pada catatan penugasan.</span></div>` : `<div class="ai-banner warn" style="margin-bottom:12px">${icon('alert')}<span>Disposisi ADK untuk laporan singkat ini belum ditarik dari SIPENA.</span></div>`) : ''; })()}<div class="form-grid">
+      <div class="field span-2"><label for="as-satker">Satker penanggung jawab</label><select class="select" id="as-satker"><option value="">— Belum ditugaskan —</option>${(() => { const pd = planDisp(ap); const tg = pd?.pulled ? pd.targets : []; const opt = s => `<option ${s.name === ap.satker ? 'selected' : ''}>${esc(s.name)}</option>`; return tg.length ? `<optgroup label="Tujuan disposisi ADK">${sats.filter(s => tg.includes(s.name)).map(opt).join('')}</optgroup><optgroup label="Di luar disposisi (wajib alasan)">${sats.filter(s => !tg.includes(s.name)).map(opt).join('')}</optgroup>` : sats.map(opt).join(''); })()}</select></div>
       <div class="field"><label for="as-bidang">Bidang</label><select class="select" id="as-bidang"><option value="">— Belum ditetapkan —</option>${bidangs.map(b => `<option ${b === ap.bidang ? 'selected' : ''}>${esc(b)}</option>`).join('')}</select></div>
       <div class="field"><label for="as-pic">PIC</label><input class="input" id="as-pic" value="${esc(ap.pic)}"></div>
       <div class="field"><label for="as-priority">Kategori atensi</label><select class="select" id="as-priority" ${ap.cls ? 'disabled title="Diturunkan dari atribut horizon × cakupan"' : ''}>${PRIORITIES.map(p => `<option ${p === ap.priority ? 'selected' : ''}>${p}</option>`).join('')}</select>${ap.cls ? `<div class="small muted" style="margin-top:4px">Mengikuti ${QUADRANTS[quadOf(ap)].label} — ubah melalui Atensi & Trajectory</div>` : ''}</div>
@@ -305,10 +308,13 @@ Actions.assignPlan = el => {
       if (priority !== ap.priority) changes.push(['Ubah Atensi', ap.priority, priority]);
       if (target !== ap.targetDate) changes.push(['Ubah Target', fmtDate(ap.targetDate), fmtDate(target)]);
       if (!changes.length) { m.close(); return toast('Tidak ada perubahan.', 'info'); }
+      const dErr = satker !== ap.satker ? dispAssignCheck(ap, satker, note) : null;
+      if (dErr) { $('#as-note', m.el).classList.add('invalid'); $('#as-note', m.el).focus(); return toast('⚠ ' + dErr, 'error'); }
       confirmDialog({ title: 'Simpan perubahan penugasan?', message: `${changes.length} perubahan akan dicatat di audit trail.${satker !== ap.satker && satker ? ` Satker <b>${esc(satker)}</b> akan menerima notifikasi.` : ''}`, confirmLabel: 'Simpan', onConfirm: () => {
         const oldSat = ap.satker;
         Object.assign(ap, { satker, bidang, pic, priority, targetDate: target, updatedAt: new Date().toISOString() });
         changes.forEach(c => audit(c[0], ap.id, c[1], c[2], note));
+        if (satker !== oldSat) dispAfterAssign(ap, note);
         if (satker && satker !== oldSat) notify(['satker:' + satker], `Rencana aksi ${ap.id} ditugaskan kepada Satker Anda.`, 'info', { type: 'plan', id: ap.id });
         if (oldSat && satker !== oldSat) notify(['satker:' + oldSat], `Rencana aksi ${ap.id} dialihkan ke ${satker || 'status belum ditugaskan'}.`, 'info', { type: 'plan', id: ap.id });
         m.close(); toast('Data berhasil disimpan.'); commit();

@@ -136,14 +136,15 @@ async function exportBriefPDF() {
   sub(`2.c Tertinggal dari trajectory (${behind.length})`, C.red); table(cols, planRows(behind, a => { const t = trackStatus(a); return `Target ${TW[t.ref.i]} ${t.ref.target}%, kurang ${t.gap} poin`; }), cw, { empty: 'Tidak ada penugasan yang tertinggal dari trajectory.', headColor: C.red });
 
   /* ---------- 3. sumber ---------- */
-  section(3, 'Arahan RDK dan Hasil Rapat dengan Komisi XI', 'Pemisahan berdasarkan sumber dokumen rujukan: Risalah RDK dan Nota Dinas Arahan DK dikelompokkan sebagai arahan Dewan Komisioner; Laporan Singkat Raker/RDP dikelompokkan sebagai hasil rapat dengan Komisi XI DPR RI.');
+  section(3, 'Arahan RDK dan Hasil Rapat dengan Komisi XI', 'Pemisahan berdasarkan sumber dokumen rujukan: Risalah RDK dan Nota Dinas Arahan DK dikelompokkan sebagai arahan Dewan Komisioner; Laporan Singkat Raker/RDP dikelompokkan sebagai hasil rapat dengan Komisi XI DPR RI, dengan rujukan disposisi ADK di SIPENA sebagai dasar penugasan satker.');
   const cats = ['RDK', 'KXI', 'LAIN'].map(k => { const l = plans.filter(a => srcCategory(a) === k); return { k, l, d: l.filter(a => dkStatus(a) === 'Selesai').length }; }).filter(c => c.l.length);
   table(['Sumber', 'Total', 'Dalam Proses', 'Selesai', '% Selesai', 'Terlambat', 'Tertinggal'], cats.map(c => [SRC_LABEL[c.k], c.l.length, c.l.length - c.d, c.d, Math.round(c.d / c.l.length * 100) + '%', c.l.filter(isLate).length, c.l.filter(a => trackStatus(a)?.st === 'Tertinggal').length]),
     ['*', 13, 20, 14, 16, 17, 17], { right: [1, 2, 3, 4, 5, 6] });
   cats.filter(c => c.k !== 'LAIN').forEach((c, i) => {
     sub(`3.${'ab'[i]} ${SRC_LABEL[c.k]} (${c.l.length})`);
-    table(['ID', 'Arahan / Penugasan', 'Dokumen', 'Satker', 'Status', 'Progres'], c.l.slice().sort((a, b) => (dkStatus(a) === 'Selesai') - (dkStatus(b) === 'Selesai') || a.id.localeCompare(b.id)).map(a => [a.id, a.arahan, findDoc(a.documentId)?.document_number || '', sat(a), dkStatus(a) + (isLate(a) ? ' (terlambat)' : ''), a.progress + '%']),
-      [20, '*', 28, 16, 24, 14], { right: [5] });
+    const kxi = c.k === 'KXI';
+    table(['ID', 'Arahan / Penugasan', kxi ? 'Disposisi ADK (SIPENA)' : 'Dokumen', 'Satker', 'Status', 'Progres'], c.l.slice().sort((a, b) => (dkStatus(a) === 'Selesai') - (dkStatus(b) === 'Selesai') || a.id.localeCompare(b.id)).map(a => [a.id, a.arahan, kxi ? (planDisp(a)?.disp ? `${a.disp?.no || planDisp(a).disp.no}\n${planDisp(a).disp.from}` : planDisp(a)?.pulled ? 'Di luar disposisi' : (findDoc(a.documentId)?.document_number || '')) : (findDoc(a.documentId)?.document_number || ''), sat(a), dkStatus(a) + (isLate(a) ? ' (terlambat)' : ''), a.progress + '%']),
+      [20, '*', kxi ? 34 : 28, 16, 24, 14], { right: [5] });
   });
 
   /* ---------- 4. atensi ---------- */

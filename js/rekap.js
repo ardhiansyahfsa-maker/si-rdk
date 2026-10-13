@@ -137,7 +137,7 @@ Exporters.rekap = () => {
         { label: 'Tanggal RDK', get: x => x.ap.rdkDate, w: 12 }, { label: 'Target Selesai', get: x => x.ap.targetDate, w: 13 },
         { label: 'Progres Terverifikasi (%)', get: x => x.ver, w: 14 }, { label: 'Progres Dilaporkan (%)', get: x => x.rep, w: 14 }, { label: 'Status (per posisi)', get: x => x.st, w: 16 }, { label: 'Label Terlambat', get: x => x.late ? 'Ya' : '', w: 12 },
         { label: 'Status Verifikasi', get: x => x.ap.verificationStatus, w: 18 }, { label: 'Menunggu Verifikasi', get: x => x.pend ? 'Ya' : '', w: 12 }, { label: 'Kategori Atensi', get: x => quadOf(x.ap) ? QUADRANTS[quadOf(x.ap)].label : '', w: 18 }, { label: 'Tertinggal Trajectory', get: x => x.behind ? 'Ya' : '', w: 12 },
-        { label: 'Strategis (SI-GRC)', get: x => x.strat ? 'Ya' : '', w: 12 }
+        { label: 'Strategis (SI-GRC)', get: x => x.strat ? 'Ya' : '', w: 12 }, { label: 'Disposisi ADK (SIPENA)', get: x => dispExport(x.ap), w: 30 }
       ] }
     ]
   };

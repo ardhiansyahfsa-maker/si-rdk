@@ -29,7 +29,8 @@ async function processDocument(doc, onStage, onLog) {
   let said = false;
   const items = await api.structureWithLLM(doc, p => { onStage(3, p); if (p > .55 && !said) { said = true; log('[llm] Memetakan bidang dan satker penanggung jawab ke master data'); } });
   log(`[llm] ${items.length} poin arahan teridentifikasi`, true);
-  items.forEach((it, i) => log(`[llm]  #${i + 1} → ${it.satker || 'satker belum teridentifikasi'} (${Math.round((it.conf.satker || .8) * 100)}%)`));
+  if (isDprDoc(doc)) applyDispositionToItems(doc, items, log);
+  items.forEach((it, i) => log(isDprDoc(doc) ? `[sipena] #${i + 1} → ${it.satker ? satkerShort(it.satker) + ' (disposisi ' + it.dispNo + ')' : 'perlu dipetakan MRDK ke tujuan disposisi'}${it.llmSatker && it.llmSatker !== it.satker ? ' · usulan LLM: ' + satkerShort(it.llmSatker) : ''}` : `[llm]  #${i + 1} → ${it.satker || 'satker belum teridentifikasi'} (${Math.round((it.conf.satker || .8) * 100)}%)`));
   doc.ocr_status = 'Selesai'; doc.document_status = 'Selesai'; doc.extraction_status = 'Perlu Review';
   doc.topic = items[0]?.topic || doc.topic;
   doc.extraction = { runAt: new Date().toISOString(), model: 'SI-RDK Extractor v2 (simulasi)', items };
@@ -146,7 +147,7 @@ function docTableHTML() {
     <td data-label="No" class="tnum">${i + 1}</td>
     <td data-label="" class="full"><div class="doc-name">${docIcon(d)}<span style="min-width:0"><b>${esc(d.document_name)}</b><small class="mono">${d.document_id}</small><small> · ${fmtSize(d.file_size)} · ${d.pages} hlm</small></span></div></td>
     <td data-label="Tanggal"><span class="nowrap tnum">${fmtDate(d.document_date)}</span><div class="small muted nowrap">unggah ${fmtDate(tsDay(d.upload_date))}</div></td>
-    <td data-label="Sumber">${esc(d.source)}</td><td data-label="Jenis">${esc(d.document_type)}</td>
+    <td data-label="Sumber">${esc(d.source)}${sipenaChip(d)}</td><td data-label="Jenis">${esc(d.document_type)}</td>
     <td data-label="Status OCR">${badge(d.ocr_status)}${d.ocr_accuracy ? `<div class="small muted tnum">akurasi ${d.ocr_accuracy.toFixed(1)}%</div>` : ''}</td>
     <td data-label="Status Ekstraksi">${badge(d.extraction_status)}</td>
     <td data-label="Jumlah Arahan" class="num tnum"><b>${docArahanCount(d)}</b></td>
@@ -168,6 +169,7 @@ registerPage('documents', {
     return `<div class="page">
       <div class="page-head"><div><div class="crumb">Dokumen · Dokumen Rujukan</div><h1>Dokumen Rujukan</h1><div class="sub">Naskah arahan RDK, laporan Komisi XI, dan rujukan lain yang menjadi dasar rencana aksi.</div></div>
         ${admin ? '' : `<span class="readonly-note">${icon('lock', 'sm')}Mode baca saja</span>`}</div>
+      ${admin ? `<section class="panel"><div class="panel-head"><div><h3>Integrasi SIPENA</h3><div class="desc">Laporan Singkat Raker/RDP Komisi XI DPR RI beserta <b>disposisi ADK</b> ditarik otomatis dari SIPENA. Satker penanggung jawab mengikuti tujuan disposisi. Penarikan terakhir: ${appState.sipenaPulledAt ? fmtDT(appState.sipenaPulledAt) : fmtDT(appState.documents.filter(d => d.sipena).map(d => d.sipena.pulledAt).sort().at(-1))} · <span class="mono small">${esc(SIPENA_ENDPOINT)}</span></div></div><button class="btn sm primary" data-act="sipenaPull">${icon('download')}Tarik dari SIPENA</button></div></section>` : ''}
       ${admin ? `<section class="panel"><div class="panel-head"><div><h3>Upload Dokumen</h3><div class="desc">PDF, DOCX, atau hasil pindai (JPG/PNG/TIFF), maks. 25 MB per berkas. Dokumen diproses otomatis setelah diunggah.</div></div></div>
         <div class="panel-body"><div class="upload-grid">
           <div style="display:flex;flex-direction:column;gap:12px">
@@ -293,6 +295,14 @@ function ocrRawText(doc) {
     `Jakarta, ${fmtDateLong(doc.document_date)}`, 'Sekretariat Dewan Komisioner', '(ditandatangani secara elektronik)'].join('\n');
 }
 function confTag(v) { if (v == null) return ''; const p = Math.round(v * 100); return `<span class="conf ${p < 85 ? 'mid' : ''}" title="Tingkat keyakinan model">${p}%</span>`; }
+/** Catatan disposisi di kartu ekstraksi (khusus laporan singkat DPR). */
+function exDispNote(it, doc) {
+  if (!isDprDoc(doc) || !doc.sipena) return '';
+  const x = it.satker ? dispFor(doc, it.satker) : null;
+  const llm = it.llmSatker && it.llmSatker !== it.satker ? `<div class="small muted">Usulan LLM: ${esc(satkerShort(it.llmSatker))} — diabaikan, mengikuti disposisi</div>` : '';
+  if (!it.satker) return `<div class="small muted">Tujuan disposisi: ${dispTargets(doc).map(satkerShort).join(', ')}</div>${llm}`;
+  return (x ? `<div style="margin-top:3px"><span class="badge b-teal">Disposisi ${esc(x.from)}</span> <span class="small mono muted">${esc(x.no)}</span></div>` : `<div style="margin-top:3px"><span class="badge b-red">Di luar disposisi ADK</span></div>`) + llm;
+}
 function exItemHTML(it, i, edit, doc) {
   const sats = appState.masters.satker; const bidangs = bidangList().map(b => b.name);
   const ro = (k, v) => `<div class="dl ${k === 'arahan' || k === 'tindakLanjut' || k === 'topic' ? 'span-2' : ''}"><dt>${EX_FIELDS.find(f => f[0] === k)[1]} ${confTag(it.conf?.[k])}</dt><dd>${v}</dd></div>`;
@@ -303,7 +313,7 @@ function exItemHTML(it, i, edit, doc) {
       ${inp('topic', `<select class="select" id="ex-${i}-topic">${[...new Set([it.topic, ...appState.masters.topics])].map(t => `<option ${t === it.topic ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>`)}
       ${inp('arahan', `<textarea class="textarea" id="ex-${i}-arahan">${esc(it.arahan)}</textarea>`)}
       ${inp('bidang', `<select class="select" id="ex-${i}-bidang"><option value="">— Belum ditetapkan —</option>${bidangs.map(b => `<option ${b === it.bidang ? 'selected' : ''}>${esc(b)}</option>`).join('')}</select>`)}
-      ${inp('satker', `<select class="select" id="ex-${i}-satker" data-change="exSatker" data-i="${i}"><option value="">— Belum ditugaskan —</option>${sats.map(s => `<option ${s.name === it.satker ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select>`)}
+      ${inp('satker', `<select class="select" id="ex-${i}-satker" data-change="exSatker" data-i="${i}"><option value="">— Belum ditugaskan —</option>${(() => { const tg = doc.sipena ? dispTargets(doc) : []; const opt = s => `<option ${s.name === it.satker ? 'selected' : ''}>${esc(s.name)}</option>`; return tg.length ? `<optgroup label="Tujuan disposisi ADK">${sats.filter(s => tg.includes(s.name)).map(opt).join('')}</optgroup><optgroup label="Di luar disposisi (wajib alasan)">${sats.filter(s => !tg.includes(s.name)).map(opt).join('')}</optgroup>` : sats.map(opt).join(''); })()}</select>`)}
       ${inp('respon', `<input class="input" id="ex-${i}-respon" value="${esc(it.respon)}">`)}
       ${inp('completedDate', `<input class="input" type="date" id="ex-${i}-completedDate" value="${esc(it.completedDate)}">`)}
       ${inp('tindakLanjut', `<textarea class="textarea" id="ex-${i}-tindakLanjut" style="min-height:60px">${esc(it.tindakLanjut)}</textarea>`)}
@@ -313,7 +323,7 @@ function exItemHTML(it, i, edit, doc) {
     : `<dl class="dl-grid" style="margin:0">
       ${ro('rdkDate', fmtDateLong(it.rdkDate))}${ro('assignmentStatus', badge(it.satker ? 'Sudah Ditugaskan' : 'Belum Ditugaskan'))}
       ${ro('topic', esc(it.topic))}${ro('arahan', `“${esc(it.arahan)}”`)}
-      ${ro('bidang', esc(it.bidang || '—'))}${ro('satker', it.satker ? esc(it.satker) : '<span style="color:var(--warn-ink)">Belum teridentifikasi</span>')}
+      ${ro('bidang', esc(it.bidang || '—'))}${ro('satker', (it.satker ? esc(it.satker) : `<span style="color:var(--warn-ink)">${isDprDoc(doc) ? 'Perlu dipetakan ke tujuan disposisi' : 'Belum teridentifikasi'}</span>`) + exDispNote(it, doc))}
       ${ro('respon', esc(it.respon || '—'))}${ro('completedDate', fmtDate(it.completedDate))}
       ${ro('tindakLanjut', esc(it.tindakLanjut || '—'))}
       <div class="dl"><dt>Atensi (usulan)</dt><dd>${prioTag(it.priority)}</dd></div>
@@ -363,7 +373,7 @@ registerPage('ocr', {
               <div class="dl"><dt>Jenis dokumen</dt><dd>${esc(doc.document_type)}</dd></div>
               <div class="dl"><dt>Diunggah</dt><dd>${esc(doc.uploaded_by)} · ${fmtDT(doc.upload_date)}</dd></div>
               <div class="dl"><dt>OCR</dt><dd>${doc.pages} halaman${doc.ocr_accuracy ? ` · akurasi ${doc.ocr_accuracy.toFixed(1)}%` : ''}</dd></div>
-            </dl></div></section>
+            </dl>${isDprDoc(doc) ? `<div class="section-label" style="margin:14px 0 8px">Disposisi ADK (SIPENA) — dasar penetapan satker</div>${dispListHTML(doc)}` : ''}</div></section>
           <section class="panel"><div class="panel-head"><div><h3>Extracted Information</h3><div class="desc">${processed ? `${items.length} poin arahan · ${esc(doc.extraction.model)} · ${fmtDT(doc.extraction.runAt)}` : 'Belum ada hasil ekstraksi'}</div></div></div>
             <div class="panel-body" style="display:flex;flex-direction:column;gap:12px">
             ${busy ? `<div class="ai-banner">${icon('sparkles')}<span>Dokumen sedang diproses. Hasil akan tampil di sini setelah selesai.</span></div>` : ''}
@@ -424,10 +434,14 @@ Actions.exRegister = () => {
   const dup = sel.length - fresh.length;
   if (!fresh.length) { toast('Seluruh poin arahan terpilih sudah ada di register.', 'warn'); return; }
   const unassigned = fresh.filter(it => !it.satker).length;
+  const dpr = isDprDoc(doc);
+  if (dpr && !doc.sipena) { toast('⚠ Disposisi ADK untuk laporan singkat ini belum ditarik dari SIPENA. Tarik dari SIPENA terlebih dahulu.', 'error'); return; }
+  const dev = dpr ? fresh.filter(it => it.satker && !dispFor(doc, it.satker)) : [];
   confirmDialog({
+    note: dev.length ? { label: `Alasan penugasan di luar disposisi ADK (${dev.map(it => satkerShort(it.satker)).join(', ')})`, required: true, placeholder: 'mis. objek arahan berada dalam kewenangan satker lain setelah koordinasi…', error: 'Alasan penugasan di luar disposisi wajib diisi.' } : null,
     title: 'Simpan ke Register?', confirmLabel: `Simpan ${fresh.length} rencana aksi`, tone: 'green',
-    message: `${fresh.length} poin arahan akan didaftarkan sebagai rencana aksi baru${unassigned ? `, ${unassigned} di antaranya berstatus <b>Belum Ditugaskan</b> dan perlu ditetapkan Satkernya` : ''}.${dup ? ` ${dup} poin dilewati karena sudah ada di register.` : ''} Satker penanggung jawab akan menerima notifikasi.`,
-    onConfirm: () => {
+    message: `${fresh.length} poin arahan akan didaftarkan sebagai rencana aksi baru${unassigned ? `, ${unassigned} di antaranya berstatus <b>Belum Ditugaskan</b> dan perlu ditetapkan Satkernya` : ''}.${dup ? ` ${dup} poin dilewati karena sudah ada di register.` : ''} Satker penanggung jawab akan menerima notifikasi.${dpr ? `<br><br>Rujukan disposisi ADK (${esc(doc.sipena.agenda)}) dilampirkan pada setiap rencana aksi.${dev.length ? ` <b style="color:var(--danger-ink)">${dev.length} poin ditugaskan ke satker di luar tujuan disposisi.</b>` : ''}` : ''}`,
+    onConfirm: (why) => {
       const ids = [];
       fresh.forEach(it => {
         appState.seq.ra += 1;
@@ -441,6 +455,7 @@ Actions.exRegister = () => {
           verificationStatus: 'Belum Diverifikasi', verificationNote: '', evidence: [], submissions: [], draft: null,
           updateDate: '', latestUpdate: '', createdAt: now, updatedAt: now, overdueNotified: false, extractedTindakLanjut: it.tindakLanjut
         });
+        attachDisposition(appState.actionPlans.at(-1), doc, why);
         ids.push(id); doc.saved_plan_ids.push(id);
         audit('Registrasi Rencana Aksi', id, '-', 'Register', `Hasil ekstraksi ${doc.document_id}`);
         if (it.satker) {

@@ -100,7 +100,7 @@ const SESSION_KEY = 'sirdk.session.v1';
 const appState = { currentUser: null, users: [], masters: {}, documents: [], actionPlans: [], notifications: [], auditLogs: [], grcLog: [], seq: {}, seededAt: null, version: 0 };
 const ui = {
   route: 'dashboard', params: {}, drawerPlan: null,
-  reg: { q: '', bidang: '', satker: '', status: '', ver: '', assign: '', prog: '', rdkFrom: '', rdkTo: '', targetTo: '', priority: '', strat: '', sort: { key: 'id', dir: 1 }, page: 1, size: 10, showFilters: false },
+  reg: { q: '', bidang: '', satker: '', status: '', ver: '', assign: '', prog: '', rdkFrom: '', rdkTo: '', targetTo: '', priority: '', strat: '', disp: '', sort: { key: 'id', dir: 1 }, page: 1, size: 10, showFilters: false },
   docs: { q: '', type: '', status: '', source: '', sort: { key: 'upload_date', dir: -1 } },
   dreg: { q: '', doc: '' },
   upd: { tab: 'action', satker: '' },
@@ -329,6 +329,7 @@ function tick(ms, onProgress) {
 function guessTemplate(name) {
   const n = name.toLowerCase();
   if (/asurans|polis|ppdp/.test(n)) return 'asuransi';
+  if (/pinjaman daring|lpbbti|pembiayaan/.test(n)) return 'lpbbti';
   if (/bank|perbankan|digital/.test(n)) return 'bank';
   return 'default';
 }
@@ -825,7 +826,7 @@ function openLink(link) {
   else if (link.type === 'grc') { go(canSee('grc') ? 'grc' : 'dashboard'); }
   else if (link.type === 'doc') { if (!findDoc(link.id)) return toast('Dokumen sudah dihapus.', 'warn'); go(canSee('ocr') ? 'ocr' : 'dashboard', { doc: link.id }); }
 }
-function resetRegFilters() { Object.assign(ui.reg, { q: '', bidang: '', satker: '', status: '', ver: '', assign: '', prog: '', rdkFrom: '', rdkTo: '', targetTo: '', priority: '', strat: '', near: 0, page: 1 }); }
+function resetRegFilters() { Object.assign(ui.reg, { q: '', bidang: '', satker: '', status: '', ver: '', assign: '', prog: '', rdkFrom: '', rdkTo: '', targetTo: '', priority: '', strat: '', disp: '', near: 0, page: 1 }); }
 
 function bindGlobalEvents() {
   document.addEventListener('click', e => {

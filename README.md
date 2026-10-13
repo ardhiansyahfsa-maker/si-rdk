@@ -45,6 +45,17 @@ intensitas pemantauan oleh MRDK, bukan tingkat kepentingan arahan.*
 2. **Satker** mengonfirmasi atau mengajukan koreksi atribut (MRDK menetapkan final).
 3. Satker menyusun **trajectory 4 triwulan** (TW I–IV tahun takwim), lalu **Admin MRDK** menyetujui atau mengembalikan.
 
+## Integrasi SIPENA — disposisi ADK (simulasi)
+
+Berlaku **khusus Laporan Singkat Raker/RDP dengan Komisi XI DPR RI**. Arahan RDK (Risalah RDK, ND Arahan DK) tidak memakai disposisi.
+
+1. **Tarik otomatis** — laporan singkat beserta disposisi ADK ditarik dari SIPENA (tombol *Tarik dari SIPENA* di Dokumen Rujukan; produksi: penarikan terjadwal ke `GET /api/sipena/v1/naskah?jenis=lapsing-dpr`). Dokumen tercatat dengan pengunggah "SIPENA (otomatis)" dan nomor agenda SIPENA.
+2. **Satker dari disposisi** — LLM hanya memecah laporan singkat menjadi poin-poin. Satker penanggung jawab ditetapkan dari tujuan disposisi ADK; usulan LLM ditampilkan sebagai pembanding saja. Jika satu disposisi ditujukan ke beberapa satker, MRDK memetakan tiap poin ke salah satu tujuan.
+3. **Penyimpangan wajib beralasan** — penugasan ke satker di luar tujuan disposisi (saat Save to Register maupun Ubah Penugasan) wajib disertai alasan, ditandai merah di drawer, dan dicatat di audit trail ("Penugasan di Luar Disposisi").
+4. **Ketertelusuran** — nomor disposisi tampil di drawer rencana aksi, dapat dicari/difilter di Register (filter *Disposisi SIPENA*), ikut di export Register dan Rekap (kolom *Disposisi ADK (SIPENA)*), serta di Laporan PDF untuk DK bagian 3.b (Komisi XI).
+
+Catatan prototipe: label "ADK Bidang X" dan nomor disposisi (DISP-…) bersifat contoh; format sebenarnya mengikuti SIPENA.
+
 ## Integrasi SI-GRC (simulasi)
 Penugasan **strategis berdampak OJK-wide** dialirkan ke SI-GRC sebagai input profil risiko satker pengampu:
 1. **Penandaan strategis** – Admin MRDK (SI-RDK).
