@@ -235,7 +235,7 @@ function bidangStats(plans) {
     const list = plans.filter(a => a.bidang === b.name); const k = computeKpis(list);
     const ver = list.length ? Math.round(list.reduce((t, a) => t + rkVerified(a, today), 0) / list.length) : 0;
     const verDone = list.filter(a => rkVerified(a, today) >= 100).length;
-    return { ...b, list, k, ver, verDone, behind: list.filter(a => trackStatus(a)?.st === 'Tertinggal').length, p12: list.filter(a => ['AK', 'AT'].includes(quadOf(a))).length, strat: list.filter(a => a.strategic).length };
+    return { ...b, list, k, ver, verDone, behind: list.filter(a => trackStatus(a)?.st === 'Tertinggal').length, p12: list.filter(a => ['AK', 'AT'].includes(quadOf(a))).length, strat: list.filter(inGRC).length };
   });
 }
 function bidangTable(rows) {
@@ -260,8 +260,7 @@ registerPage('executive', {
     const tr = s => plans.filter(a => trackStatus(a)?.st === s).length; const approved = plans.filter(a => prepStatus(a) === 'Trajectory Disetujui').length;
     const prep = plans.filter(a => !['Trajectory Disetujui'].includes(prepStatus(a))).length;
     const p1Behind = plans.filter(a => quadOf(a) === 'AK' && trackStatus(a)?.st === 'Tertinggal');
-    const strat = plans.filter(a => a.strategic); const gs = s => strat.filter(a => grcStatus(a) === s).length;
-    const highRec = strat.filter(a => a.grc?.recorded?.level === 'Tinggi' && grcStatus(a) === 'Selesai').length;
+    const strat = plans.filter(inGRC); const gs = s => strat.filter(a => grcStatus(a) === s).length;
     return `<div class="page">
       <div class="page-head"><div><div class="crumb">Monitoring · Executive Dashboard</div><h1>Executive Dashboard</h1><div class="sub">Ringkasan untuk pimpinan per ${fmtDateLong(today)}. Angka progres <b>terverifikasi</b> = update terakhir yang disetujui MRDK.</div></div>
         <div class="btn-group"><button class="btn primary sm" data-act="briefPDF" title="Laporan ringkas untuk Dewan Komisioner: status, perhatian, sumber arahan, kategori atensi">${icon('file')}Laporan PDF untuk DK</button>${exportButtons('rekap')}</div></div>
@@ -281,14 +280,14 @@ registerPage('executive', {
         <div class="panel"><div class="panel-head"><h3>Status Pelaksanaan</h3></div><div class="panel-body"><div class="chart-box short"><canvas id="ex-donut"></canvas><div class="donut-center"><div><b>${k.rate}%</b><span>selesai</span></div></div></div><div class="legend" id="ex-legend"></div></div></div>
         <div class="panel"><div class="panel-head"><div><h3>Status per Bidang</h3><div class="desc">Jumlah penugasan per status di 9 bidang · klik batang untuk membuka</div></div></div><div class="panel-body"><div class="chart-box"><canvas id="ex-bidang"></canvas></div></div></div>
       </section>
-      <section class="panel"><div class="panel-head"><div><h3>Kinerja per Bidang</h3><div class="desc">Progres terverifikasi vs dilaporkan, keterlambatan, trajectory, kategori atensi, dan penugasan strategis · klik baris untuk melihat penugasan</div></div><button class="btn xs ghost" data-act="go" data-route="rekap">Rekap lengkap ${icon('chevRight', 'sm')}</button></div>${bidangTable(bstats)}</section>
+      <section class="panel"><div class="panel-head"><div><h3>Kinerja per Bidang</h3><div class="desc">Progres terverifikasi vs dilaporkan, keterlambatan, trajectory, kategori atensi, dan penugasan OJK-wide (SI-GRC) · klik baris untuk melihat penugasan</div></div><button class="btn xs ghost" data-act="go" data-route="rekap">Rekap lengkap ${icon('chevRight', 'sm')}</button></div>${bidangTable(bstats)}</section>
       <section class="grid g-3">
         <div class="panel"><div class="panel-head"><div><h3>Matriks Atensi Pemantauan</h3><div class="desc">Horizon × cakupan · klik sel untuk membuka</div></div></div><div class="panel-body">${matrixHTML(plans, 'kpi')}</div></div>
         <div class="panel"><div class="panel-head"><div><h3>Posisi Trajectory</h3><div class="desc">${approved} dari ${plans.length} penugasan memiliki trajectory disetujui</div></div></div><div class="panel-body" style="padding-top:4px">
           ${miniStat('Tertinggal dari target TW', tr('Tertinggal'), 'traj:Tertinggal', 'color:var(--danger-ink)')}${miniStat('Sesuai trajectory', tr('Sesuai Trajectory'), 'traj:Sesuai Trajectory', 'color:var(--success-ink)')}${miniStat('Selesai', tr('Selesai'), 'traj:Selesai')}${miniStat('Belum memiliki trajectory disetujui', prep, 'goto:trajectory', 'color:var(--warn-ink)')}
           ${p1Behind.length ? `<div class="ai-banner red" style="margin-top:10px">${icon('alert')}<span><b>Atensi Khusus tertinggal:</b> ${p1Behind.map(a => `<button class="link-btn mono" data-act="openPlan" data-id="${a.id}">${a.id}</button>`).join(', ')}</span></div>` : ''}</div></div>
-        <div class="panel"><div class="panel-head"><div><h3>Integrasi SI-GRC</h3><div class="desc">${strat.length} penugasan strategis OJK-wide</div></div></div><div class="panel-body" style="padding-top:4px">
-          ${miniStat('Tercatat di profil risiko (selesai)', gs('Selesai'), 'grc:Selesai', 'color:var(--success-ink)')}${miniStat('Diproses di SI-GRC', gs('Menunggu Pengelompokan Risiko') + gs('Menunggu Konfirmasi RQO'), 'goto:grc')}${miniStat('Siap / perlu dikirim', gs('Siap Dikirim') + gs('Perlu Sinkron Ulang'), 'grc:Siap Dikirim', 'color:var(--warn-ink)')}${miniStat('Tercatat level risiko Tinggi', highRec, 'grc:Selesai', 'color:var(--danger-ink)')}</div></div>
+        <div class="panel"><div class="panel-head"><div><h3>Integrasi SI-GRC</h3><div class="desc">${strat.length} penugasan ber-cakupan OJK-wide</div></div></div><div class="panel-body" style="padding-top:4px">
+          ${miniStat('Tercatat di profil risiko (selesai)', gs('Selesai'), 'grc:Selesai', 'color:var(--success-ink)')}${miniStat('Diproses di SI-GRC', gs('Menunggu Pengelompokan Risiko') + gs('Menunggu Konfirmasi RQO'), 'goto:grc')}${miniStat('Siap / perlu dikirim', gs('Siap Dikirim') + gs('Perlu Sinkron Ulang'), 'grc:Siap Dikirim', 'color:var(--warn-ink)')}${miniStat('Menunggu konfirmasi cakupan', gs('Menunggu Konfirmasi Cakupan'), 'grc:Menunggu Konfirmasi Cakupan')}</div></div>
       </section>
       <section class="panel"><div class="panel-head"><div><h3>Status per Satker</h3><div class="desc">${stats.length} satker yang memiliki penugasan · klik batang untuk membuka</div></div></div><div class="panel-body"><div class="chart-box" style="height:${Math.max(220, stats.length * 22 + 60)}px"><canvas id="ex-stack"></canvas></div></div></section>
       <section class="panel"><div class="panel-head"><div><h3>Kinerja Satker</h3><div class="desc">Diurutkan menurut rata-rata progress · klik baris untuk melihat rencana aksi</div></div></div>${satkerTable(stats)}</section>

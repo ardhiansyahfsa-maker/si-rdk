@@ -62,11 +62,10 @@ Berlaku **khusus Laporan Singkat Raker/RDP dengan Komisi XI DPR RI**. Arahan RDK
 Catatan prototipe: label "ADK Bidang X" dan nomor disposisi (DISP-…) bersifat contoh; format sebenarnya mengikuti SIPENA.
 
 ## Integrasi SI-GRC (simulasi)
-Penugasan **strategis berdampak OJK-wide** dialirkan ke SI-GRC sebagai input profil risiko satker pengampu:
-1. **Penandaan strategis** – Admin MRDK (SI-RDK).
-2. **Kirim ke SI-GRC** – Admin MRDK (SI-RDK).
+**Pemicu: atribut cakupan = OJK-wide** (dicatat MRDK, dikonfirmasi satker) — apa pun horizon dan kategori atensinya. Tidak ada penandaan "strategis" manual.
+1. **Cakupan OJK-wide dikonfirmasi satker** – penugasan otomatis masuk antrean SI-GRC (sebelum dikonfirmasi: *Menunggu Konfirmasi Cakupan*).
+2. **Kirim ke SI-GRC** – Admin MRDK (SI-RDK): data penugasan, kondisi pelaksanaan, serta horizon/cakupan sebagai informasi pendukung.
 3. **Pengelompokan risiko & input profil risiko satker** – Admin SI-GRC (di SI-GRC).
 4. **Konfirmasi Risk & Quality Officer satker** – di SI-GRC → **Selesai**.
 
-Tahap 3–4 terjadi di SI-GRC; SI-RDK hanya menerima status baliknya. Untuk demo, Admin MRDK dapat menekan
-**Simulasi SI-GRC** untuk menghasilkan status balik tersebut. Kontrak data: `grcPayload()` di `js/grc.js`.
+SI-RDK **tidak menilai risiko**: kategori, nama risiko, dan level risiko ditetapkan SI-GRC dengan metodologinya sendiri dan ditampilkan apa adanya ("Level risiko (ditetapkan SI-GRC)"). Bila cakupan dikoreksi menjadi bukan OJK-wide, penugasan otomatis ditarik dan Admin SI-GRC diberi tahu. Untuk demo, Admin MRDK dapat menekan *Simulasi SI-GRC* untuk menghasilkan status balik.

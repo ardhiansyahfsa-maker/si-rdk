@@ -5,7 +5,7 @@
    opened, so "Terlambat" and "mendekati deadline" stay meaningful in demos.
    ========================================================================= */
 
-const SEED_VERSION = 21;
+const SEED_VERSION = 22;
 
 const ROLE_LABEL = { admin: 'Admin / MRDK', satker: 'Satker Pelaksana', viewer: 'Pimpinan' };
 
@@ -265,7 +265,7 @@ function buildSeed() {
       evidence: [], submissions: [], draft: null,
       updateDate: uOff != null ? D(uOff) : '', latestUpdate: x.tl || '',
       createdAt, updatedAt: uOff != null ? T(uOff, 15, 20) : createdAt,
-      overdueNotified: false, strategic: false, grc: null
+      overdueNotified: false, grc: null
     };
     doc.saved_plan_ids.push(id);
 
@@ -311,7 +311,7 @@ function buildSeed() {
     }
   });
 
-  // Penugasan strategis OJK-wide → SI-GRC: Tandai (MRDK) → Kirim (MRDK) → Kelompokkan & input profil risiko (Admin SI-GRC) → Konfirmasi RQO
+  // Penugasan ber-cakupan OJK-wide → SI-GRC (otomatis dari atribut cakupan): Kirim (MRDK) → Kelompokkan & input profil risiko (Admin SI-GRC) → Konfirmasi RQO
   // [planIdx, catatan MRDK, { f: hari tandai, s: hari kirim, m: [kategori, risiko, level, hari], c: hari konfirmasi, then: kondisi saat selesai }]
   const MR = 'Ardhiansyah K', GA = 'Rudi Hartono';
   const RQO = { 'Departemen Pengendalian Kualitas dan Pengembangan Pengawasan Perbankan': 'Lina Marlina' };
@@ -334,9 +334,7 @@ function buildSeed() {
   G.slice().sort((a, b) => a[2].f - b[2].f).forEach(([idx, note, x]) => {
     const ap = actionPlans[idx];
     const snap = x.then ? { ...ap, ...x.then } : ap;
-    const g = ap.grc = { note, stage: 'flagged', flaggedAt: T(x.f, 9, 30 + (idx % 20)), flaggedBy: MR };
-    ap.strategic = true;
-    log(g.flaggedAt, MR, 'admin', 'Tandai Strategis', ap.id, 'Non-strategis', 'Strategis OJK-wide', note);
+    const g = ap.grc = { note };
     if (!x.s || !ap.satker) return;
     g.riskId = `GRC-RI-2026-${String(++grcSeq).padStart(4, '0')}`;
     Object.assign(g, { stage: 'sent', sentAt: T(x.s, 15, 5 + (idx % 40)), sentBy: MR });
@@ -357,7 +355,8 @@ function buildSeed() {
 
   // Kategori atensi (atribut faktual horizon × cakupan) & trajectory TW I–IV
   const after = (iso, days, h = 10) => { const d = new Date(iso); d.setDate(d.getDate() + days); d.setHours(h, 10 + days % 40, 0, 0); return new Date(Math.min(d.getTime(), nowMs - 120000)).toISOString(); };
-  const STATE = { 23: 'none', 20: 'none', 10: 'proposed', 16: 'proposed', 22: 'proposed', 15: 'adjust', 24: 'confirmed', 18: 'confirmed', 5: 'returned', 2: 'submitted', 8: 'submitted' };
+  const OJKWIDE = new Set(G.map(x => x[0]));
+  const STATE = { 23: 'proposed', 20: 'none', 10: 'proposed', 16: 'proposed', 22: 'proposed', 15: 'adjust', 24: 'confirmed', 18: 'confirmed', 5: 'returned', 2: 'submitted', 8: 'submitted' };
   const OUT = [['Kajian awal dan rencana kerja'], ['Kajian awal dan rencana kerja', 'Penyelesaian dan pelaporan hasil'], ['Kajian dan pemetaan permasalahan', 'Penyusunan konsep / rancangan', 'Penyelesaian dan pelaporan hasil'], ['Kajian dan pemetaan permasalahan', 'Penyusunan konsep / rancangan', 'Pelaksanaan dan koordinasi pemangku kepentingan', 'Penyelesaian dan pelaporan hasil']];
   const mkTraj = ap => {
     const year = +ap.rdkDate.slice(0, 4); const ends = ['03-31', '06-30', '09-30', '12-31'].map(e => `${year}-${e}`);
@@ -366,10 +365,10 @@ function buildSeed() {
   };
   actionPlans.forEach((ap, i) => {
     const st = STATE[i] || 'approved'; if (st === 'none') return;
-    // Atribut faktual: horizon dari jarak target, cakupan dari penanda strategis / sifat penugasan
+    // Atribut faktual: horizon dari jarak target, cakupan dari sifat penugasan (OJKWIDE = berdampak OJK-wide)
     const dTo = diffDays(ap.targetDate, ap.rdkDate);  // jangka waktu yang diberikan sejak arahan
     const horizon = dTo <= 90 ? 'Segera' : ap.targetDate <= `${ap.rdkDate.slice(0, 4)}-12-31` ? 'Tahun Berjalan' : 'Berkelanjutan';
-    const scope = ap.strategic ? 'OJK-wide' : (P[i][6] === 'Tinggi' || i % 3 === 0) ? 'Lintas Satker' : 'Satu Satker';
+    const scope = OJKWIDE.has(i) ? 'OJK-wide' : (P[i][6] === 'Tinggi' || i % 3 === 0) ? 'Lintas Satker' : 'Satu Satker';
     const q = quadrantOf(horizon, scope); ap.priority = QUADRANTS[q].prio;
     const at = after(ap.createdAt, 1, 9);
     ap.cls = { horizon, scope, note: '', by: MR, at, status: 'proposed', satker: null, proposal: null };
@@ -461,7 +460,7 @@ function buildSeed() {
   note(['admin'], 'Dokumen baru "Laporan Singkat RDP Komisi XI - Pelindungan Konsumen Asuransi.pdf" siap diproses.', 'info', { type: 'doc', id: 'DOC-2026-011' }, documents[10].upload_date);
   note(['admin', 'viewer'], 'DPTP melakukan update progress RA-2026-014 menjadi 100%.', 'ok', { type: 'plan', id: 'RA-2026-014' }, actionPlans[13].updatedAt);
   note(['satker:Departemen Pelindungan Konsumen'], 'RA-2026-002 telah disetujui Admin MRDK.', 'ok', { type: 'plan', id: 'RA-2026-002' }, actionPlans[1].submissions[0].resultAt);
-  note(['admin'], '4 penugasan strategis siap/perlu dikirim ke SI-GRC.', 'warn', { type: 'grc' }, T(0, 7, 30));
+  note(['admin'], 'Penugasan ber-cakupan OJK-wide siap/perlu dikirim ke SI-GRC.', 'warn', { type: 'grc' }, T(0, 7, 30));
   note(['admin'], 'DLIK mengajukan koreksi atribut atensi RA-2026-016.', 'warn', { type: 'plan', id: 'RA-2026-016' }, actionPlans[15].cls.proposal.at);
   note(['admin'], '2 trajectory menunggu persetujuan MRDK (RA-2026-003, RA-2026-009).', 'warn', { type: 'plan', id: 'RA-2026-003' }, actionPlans[8].traj.submittedAt);
   note(['satker:Departemen Pengawasan Perilaku Pelaku Usaha Jasa Keuangan'], 'Mohon konfirmasi atribut atensi RA-2026-023 yang dicatat MRDK.', 'warn', { type: 'plan', id: 'RA-2026-023' }, actionPlans[22].cls.at);

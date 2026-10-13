@@ -6,7 +6,7 @@
 /* ------------------------------ Plan table ------------------------------- */
 const PLAN_COLS = {
   no: { label: 'No', cell: (a, i) => `<span class="tnum">${i + 1}</span>` },
-  id: { label: 'ID', sort: 'id', cell: a => `<span class="id">${a.id}</span>${a.strategic ? '<div style="margin-top:4px"><span class="badge b-violet" title="Penugasan strategis OJK-wide — dialirkan ke SI-GRC">SI-GRC</span></div>' : ''}` },
+  id: { label: 'ID', sort: 'id', cell: a => `<span class="id">${a.id}</span>${inGRC(a) ? '<div style="margin-top:4px"><span class="badge b-violet" title="Cakupan OJK-wide — dialirkan ke SI-GRC">SI-GRC</span></div>' : ''}` },
   rdk: { label: 'Tanggal RDK', sort: 'rdkDate', cell: a => `<span class="nowrap tnum">${fmtDate(a.rdkDate)}</span>` },
   topic: { label: 'Topik', sort: 'topic', cell: a => `<span class="clamp-2" style="min-width:140px;max-width:200px">${esc(a.topic)}</span>` },
   arahan: { label: 'Poin Arahan', cls: 'arahan', full: true, cell: a => `<span class="clamp-2">${esc(a.arahan)}</span>` },
@@ -54,8 +54,8 @@ function filterPlans(plans, f) {
     if (f.satker && !inList(a.satker, f.satker)) return false;
     if (f.bidang && a.bidang !== f.bidang) return false;
     if (f.priority && a.priority !== f.priority) return false;
-    if (f.strat === 'Strategis (SI-GRC)' && !a.strategic) return false;
-    if (f.strat === 'Non-strategis' && a.strategic) return false;
+    if (f.strat === 'Masuk SI-GRC (OJK-wide)' && !inGRC(a)) return false;
+    if (f.strat === 'Tidak masuk SI-GRC' && inGRC(a)) return false;
     if (f.disp) { const pd = planDisp(a); if (f.disp === 'Lapsing DPR (SIPENA)' ? !pd : f.disp === 'Sesuai disposisi' ? !(pd && pd.disp) : !(pd && pd.deviated)) return false; }
     if (f.rdkFrom && a.rdkDate < f.rdkFrom) return false;
     if (f.rdkTo && a.rdkDate > f.rdkTo) return false;
@@ -81,7 +81,7 @@ function sortPlans(plans, sort) {
 function regRows() { return sortPlans(filterPlans(visiblePlans(), ui.reg), ui.reg.sort); }
 const optList = (vals, cur, all) => `<option value="">${all}</option>` + (cur && !vals.includes(cur) ? `<option value="${esc(cur)}" selected>${esc(cur.split(',').join(' / '))}</option>` : '') + vals.map(v => `<option ${v === cur ? 'selected' : ''}>${esc(v)}</option>`).join('');
 function regChips() {
-  const f = ui.reg; const L = { q: 'Kata kunci', status: 'Status', ver: 'Verifikasi', assign: 'Penugasan', satker: 'Satker', bidang: 'Bidang', priority: 'Atensi', strat: 'Klasifikasi', disp: 'Disposisi', rdkFrom: 'RDK dari', rdkTo: 'RDK s.d.', targetTo: 'Target s.d.', prog: 'Progress', near: 'Deadline ≤' };
+  const f = ui.reg; const L = { q: 'Kata kunci', status: 'Status', ver: 'Verifikasi', assign: 'Penugasan', satker: 'Satker', bidang: 'Bidang', priority: 'Atensi', strat: 'SI-GRC', disp: 'Disposisi', rdkFrom: 'RDK dari', rdkTo: 'RDK s.d.', targetTo: 'Target s.d.', prog: 'Progress', near: 'Deadline ≤' };
   const chips = Object.keys(L).filter(k => f[k]).map(k => {
     let v = f[k]; if (['rdkFrom', 'rdkTo', 'targetTo'].includes(k)) v = fmtDate(v); if (k === 'near') v = v + ' hari'; if (k === 'prog') v = v + '%'; if (typeof v === 'string') v = v.split(',').join(' / ');
     return `<span class="chip">${esc(L[k])}: <b>${esc(v)}</b><button data-act="regClear" data-k="${k}" aria-label="Hapus filter ${esc(L[k])}">${icon('x', 'sm')}</button></span>`;
@@ -123,7 +123,7 @@ registerPage('register', {
           <div class="field"><label for="rf-prog">Progress</label><select class="select sm" id="rf-prog" data-change="regFilter"><option value="">Semua</option>${[['0', '0% (belum mulai)'], ['1-49', '1–49%'], ['50-99', '50–99%'], ['100', '100%']].map(([v, l]) => `<option value="${v}" ${f.prog === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
           <div class="field"><label for="rf-targetTo">Target selesai s.d.</label><input class="input sm" type="date" id="rf-targetTo" value="${esc(f.targetTo)}" data-change="regFilter"></div>
           <div class="field"><label for="rf-priority">Kategori atensi</label><select class="select sm" id="rf-priority" data-change="regFilter">${optList(PRIORITIES, f.priority, 'Semua')}</select></div>
-          <div class="field"><label for="rf-strat">Klasifikasi</label><select class="select sm" id="rf-strat" data-change="regFilter">${optList(['Strategis (SI-GRC)', 'Non-strategis'], f.strat, 'Semua')}</select></div>
+          <div class="field"><label for="rf-strat">SI-GRC</label><select class="select sm" id="rf-strat" data-change="regFilter">${optList(['Masuk SI-GRC (OJK-wide)', 'Tidak masuk SI-GRC'], f.strat, 'Semua')}</select></div>
           <div class="field"><label for="rf-disp">Disposisi SIPENA</label><select class="select sm" id="rf-disp" data-change="regFilter">${optList(['Lapsing DPR (SIPENA)', 'Sesuai disposisi', 'Di luar disposisi'], f.disp, 'Semua')}</select></div>
           <div class="field"><label>Sesi RDK</label><select class="select sm" data-change="regRdk" aria-label="Pilih sesi RDK"><option value="">Pilih tanggal…</option>${rdkDates.map(d => `<option value="${d}" ${f.rdkFrom === d && f.rdkTo === d ? 'selected' : ''}>${fmtDate(d)}</option>`).join('')}</select></div>
         </div>

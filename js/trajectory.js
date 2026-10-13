@@ -14,7 +14,7 @@ const SCOPES = ['OJK-wide', 'Lintas Satker', 'Satu Satker'];
 const H_SCORE = { 'Segera': 3, 'Tahun Berjalan': 2, 'Berkelanjutan': 1 };
 const S_SCORE = { 'OJK-wide': 3, 'Lintas Satker': 2, 'Satu Satker': 1 };
 const HORIZON_HINT = { 'Segera': 'Jangka waktu ≤ 3 bulan sejak arahan, atau tenggat yang ditetapkan DK / DPR / BPK', 'Tahun Berjalan': 'Diselesaikan dalam tahun takwim arahan', 'Berkelanjutan': 'Program berkelanjutan atau lintas tahun' };
-const SCOPE_HINT = { 'OJK-wide': 'Berdampak ke seluruh OJK atau lintas sektor jasa keuangan', 'Lintas Satker': 'Melibatkan lebih dari satu satker atau bidang', 'Satu Satker': 'Diselesaikan dalam lingkup satker pelaksana' };
+const SCOPE_HINT = { 'OJK-wide': 'Berdampak ke seluruh OJK atau lintas sektor jasa keuangan · otomatis dialirkan ke SI-GRC', 'Lintas Satker': 'Melibatkan lebih dari satu satker atau bidang', 'Satu Satker': 'Diselesaikan dalam lingkup satker pelaksana' };
 const QUADRANTS = {
   AK: { label: 'Atensi Khusus', cls: 'b-red', prio: 'Atensi Khusus' },
   AT: { label: 'Atensi Tinggi', cls: 'b-amber', prio: 'Atensi Tinggi' },

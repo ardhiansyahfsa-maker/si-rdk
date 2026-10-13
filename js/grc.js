@@ -1,8 +1,9 @@
 /* =========================================================================
    SI-RDK · grc.js — Interfacing SI-RDK → SI-GRC
-   Penugasan strategis yang berdampak OJK-wide dialirkan ke SI-GRC sebagai
-   input profil risiko satuan kerja pengampu tindak lanjut:
-     1. Penandaan MRDK      — Admin MRDK menandai penugasan strategis OJK-wide   (SI-RDK)
+   Pemicu: atribut CAKUPAN = OJK-wide (dicatat MRDK, dikonfirmasi satker) —
+   apa pun horizon/kategori atensinya. Tidak ada penandaan manual terpisah.
+   SI-RDK TIDAK menilai risiko; kategori & level risiko ditetapkan SI-GRC.
+     1. Cakupan OJK-wide    — dicatat MRDK, dikonfirmasi satker                    (SI-RDK)
      2. Pengiriman MRDK     — Admin MRDK mengirim ke SI-GRC                       (SI-RDK)
      3. Pengelompokan risiko— Admin SI-GRC menetapkan kategori & risiko, lalu
                               menginput ke profil risiko satker                  (SI-GRC)
@@ -14,42 +15,50 @@
    ========================================================================= */
 
 const GRC_CATEGORIES = ['Risiko Strategis', 'Risiko Operasional', 'Risiko Kepatuhan', 'Risiko Reputasi', 'Risiko Hukum'];
-const GRC_LEVELS = ['Tinggi', 'Sedang', 'Rendah'];
-const GRC_STATUSES = ['Menunggu Penugasan', 'Siap Dikirim', 'Menunggu Pengelompokan Risiko', 'Menunggu Konfirmasi RQO', 'Perlu Sinkron Ulang', 'Selesai'];
+/** Contoh skala untuk simulasi saja — skala sebenarnya milik SI-GRC dan tidak dikunci di SI-RDK. */
+const GRC_LEVEL_HINTS = ['Sangat Tinggi', 'Tinggi', 'Sedang', 'Rendah', 'Sangat Rendah'];
+const GRC_STATUSES = ['Menunggu Penugasan', 'Menunggu Konfirmasi Cakupan', 'Siap Dikirim', 'Menunggu Pengelompokan Risiko', 'Menunggu Konfirmasi RQO', 'Perlu Sinkron Ulang', 'Selesai'];
 const GRC_ENDPOINT = 'POST /api/grc/v1/risk-inputs';
 const GRC_CALLBACK = 'POST /api/sirdk/v1/grc-status (callback dari SI-GRC)';
 Object.assign(BADGE_CLASS, {
-  'Menunggu Penugasan': 'b-outline', 'Siap Dikirim': 'b-blue', 'Menunggu Pengelompokan Risiko': 'b-amber',
+  'Menunggu Penugasan': 'b-outline', 'Menunggu Konfirmasi Cakupan': 'b-outline', 'Siap Dikirim': 'b-blue', 'Menunggu Pengelompokan Risiko': 'b-amber',
   'Menunggu Konfirmasi RQO': 'b-amber', 'Perlu Sinkron Ulang': 'b-violet', 'Selesai': 'b-teal'
 });
 ui.grc = { q: '', status: '', satker: '' };
 
 /* ------------------------------ Aturan ----------------------------------- */
-/** Indikator pelaksanaan yang dikirim sebagai bahan bagi Admin SI-GRC (aturan prototipe, bukan penilaian risiko). */
+/** Kondisi pelaksanaan yang dikirim sebagai informasi bagi SI-GRC — fakta pelaksanaan, BUKAN penilaian risiko. */
+const KOND_ORDER = { 'Terlambat': 0, 'Perlu Perhatian': 1, 'Sesuai Rencana': 2, 'Selesai': 3 };
+const KOND_CLS = { 'Terlambat': 'b-red', 'Perlu Perhatian': 'b-amber', 'Sesuai Rencana': 'b-blue', 'Selesai': 'b-teal' };
 function grcSignal(ap) {
   const st = execStatus(ap); const d = daysToTarget(ap);
-  if (st === 'Selesai' && ap.verificationStatus === 'Disetujui') return { level: 'Rendah', reason: 'Tindak lanjut selesai dan disetujui MRDK' };
-  if (isLate(ap)) return { level: 'Tinggi', reason: `Melewati target ${-d} hari dengan progress ${ap.progress}%` };
-  if (['Ditolak', 'Perlu Perbaikan'].includes(ap.verificationStatus)) return { level: 'Sedang', reason: `Update satker ${ap.verificationStatus === 'Ditolak' ? 'ditolak' : 'dikembalikan untuk perbaikan'} oleh MRDK` };
-  if (onHold(ap)) return { level: 'Sedang', reason: 'Pelaksanaan menunggu arahan pimpinan' };
-  if (st !== 'Selesai' && d != null && d <= 30 && ap.progress < 50) return { level: 'Sedang', reason: `Target ${d} hari lagi, progress baru ${ap.progress}%` };
-  if (st === 'Selesai') return { level: 'Rendah', reason: 'Selesai, menunggu verifikasi MRDK' };
-  return { level: 'Rendah', reason: 'Pelaksanaan sesuai rencana' };
+  if (st === 'Selesai' && ap.verificationStatus === 'Disetujui') return { kond: 'Selesai', reason: 'Tindak lanjut selesai dan disetujui MRDK' };
+  if (isLate(ap)) return { kond: 'Terlambat', reason: `Melewati target ${-d} hari dengan progress ${ap.progress}%` };
+  if (['Ditolak', 'Perlu Perbaikan'].includes(ap.verificationStatus)) return { kond: 'Perlu Perhatian', reason: `Update satker ${ap.verificationStatus === 'Ditolak' ? 'ditolak' : 'dikembalikan untuk perbaikan'} oleh MRDK` };
+  if (onHold(ap)) return { kond: 'Perlu Perhatian', reason: 'Pelaksanaan menunggu arahan pimpinan' };
+  if (st !== 'Selesai' && d != null && d <= 30 && ap.progress < 50) return { kond: 'Perlu Perhatian', reason: `Target ${d} hari lagi, progress baru ${ap.progress}%` };
+  if (st === 'Selesai') return { kond: 'Sesuai Rencana', reason: 'Selesai, menunggu verifikasi MRDK' };
+  return { kond: 'Sesuai Rencana', reason: 'Pelaksanaan sesuai rencana' };
 }
+const kondTag = s => `<span class="badge ${KOND_CLS[s.kond]}">${s.kond}</span>`;
+/** Pemicu SI-GRC: cakupan OJK-wide (atribut atensi). */
+const inGRC = ap => ap?.cls?.scope === 'OJK-wide';
+const grcScopeConfirmed = ap => inGRC(ap) && ap.cls.status === 'confirmed' && ap.cls.satker === ap.satker;
 /** Sidik data pelaksanaan: bila berubah setelah selesai dicatat → perlu sinkron ulang. */
-const grcFingerprint = ap => [ap.satker, ap.progress, execStatus(ap) + (isLate(ap) ? '+T' : ''), ap.verificationStatus, ap.targetDate, grcSignal(ap).level].join('|');
+const grcFingerprint = ap => [ap.satker, ap.progress, execStatus(ap) + (isLate(ap) ? '+T' : ''), ap.verificationStatus, ap.targetDate, grcSignal(ap).kond].join('|');
 function grcStatus(ap) {
-  if (!ap.strategic) return null;
+  if (!inGRC(ap)) return null;
   if (!ap.satker) return 'Menunggu Penugasan';
   const g = ap.grc || {};
   if (g.stage === 'sent') return 'Menunggu Pengelompokan Risiko';
   if (g.stage === 'mapped') return 'Menunggu Konfirmasi RQO';
   if (g.stage === 'confirmed') return grcFingerprint(ap) === g.doneFp ? 'Selesai' : 'Perlu Sinkron Ulang';
+  if (!grcScopeConfirmed(ap)) return 'Menunggu Konfirmasi Cakupan';
   return 'Siap Dikirim';
 }
 const GRC_SENDABLE = ['Siap Dikirim', 'Perlu Sinkron Ulang'];
 function grcPlans() {
-  const all = appState.actionPlans.filter(a => a.strategic);
+  const all = appState.actionPlans.filter(inGRC);
   return cu().role === 'satker' ? all.filter(a => a.satker === cu().satker) : all;
 }
 /** Item yang menunggu tindakan peran yang sedang login. */
@@ -59,8 +68,9 @@ function grcTodo() {
   return [];
 }
 const grcPending = grcTodo;
-const sigTag = lv => `<span class="prio ${lv}">${lv.toUpperCase()}</span>`;
-const strategicTag = () => `<span class="badge b-violet" title="Penugasan strategis berdampak OJK-wide — dialirkan ke SI-GRC">Strategis · SI-GRC</span>`;
+/** Level risiko apa adanya dari SI-GRC (tidak diinterpretasi SI-RDK). */
+const lvTag = lv => lv ? `<span class="badge b-outline" title="Level risiko ditetapkan SI-GRC">${esc(lv)}</span>` : '';
+const strategicTag = () => `<span class="badge b-violet" title="Cakupan OJK-wide — otomatis dialirkan ke SI-GRC">OJK-wide · SI-GRC</span>`;
 const canSendGRC = ap => isRole('admin') && GRC_SENDABLE.includes(grcStatus(ap));
 /* Simulasi status balik SI-GRC (demo) — hanya Admin MRDK */
 const canMapGRC = ap => isRole('admin') && grcStatus(ap) === 'Menunggu Pengelompokan Risiko';
@@ -72,11 +82,12 @@ function grcPayload(ap) {
   const s = grcSignal(ap); const g = ap.grc || {}; const sat = (appState.masters?.satker || MASTER_SATKER).find(x => x.name === ap.satker);
   return {
     source_system: 'SI-RDK', source_ref: ap.id, grc_ref: g.riskId || null, submission: g.recorded ? 'update' : 'new',
-    classification: 'Penugasan Strategis', impact_scope: 'OJK-wide', mrdk_note: g.note || null,
+    trigger: 'impact_scope = OJK-wide', mrdk_note: g.note || null,
+    attention_attributes: { impact_scope: ap.cls?.scope || null, horizon: ap.cls?.horizon || null, confirmed_by_owner: grcScopeConfirmed(ap), note: 'informasi pendukung — bukan penilaian risiko' },
     owner_unit: { code: sat?.key || null, name: ap.satker, bidang: ap.bidang, pic: ap.pic },
     assignment: { rdk_date: ap.rdkDate, topic: ap.topic, directive: ap.arahan, source_document: ap.documentName, monitoring_attention: legacyAtensi(ap.priority) },
     execution: { target_date: ap.targetDate, progress_pct: ap.progress, status: execStatus(ap), late: isLate(ap), awaiting_direction: onHold(ap), verification_status: ap.verificationStatus, last_update: ap.updateDate || null, obstacles: ap.kendala || null },
-    execution_indicator: { level: s.level, reason: s.reason }
+    execution_condition: { condition: s.kond, reason: s.reason }
   };
 }
 
@@ -92,12 +103,12 @@ async function sendToGRC(ids) {
   if (!plans.length) return toast('Tidak ada penugasan yang dapat dikirim.', 'info');
   toast(`Mengirim ${plans.length} penugasan ke SI-GRC…`, 'info');
   const now = new Date().toISOString();
-  plans.forEach(ap => { const g = ap.grc; if (!g.riskId) { appState.seq.grc = (appState.seq.grc || 0) + 1; g.riskId = `GRC-RI-2026-${String(appState.seq.grc).padStart(4, '0')}`; } });
+  plans.forEach(ap => { const g = ap.grc = ap.grc || {}; if (!g.riskId) { appState.seq.grc = (appState.seq.grc || 0) + 1; g.riskId = `GRC-RI-2026-${String(appState.seq.grc).padStart(4, '0')}`; } });
   const payload = plans.map(grcPayload);
   const res = await api.pushToGRC(payload);
   plans.forEach(ap => {
     const prev = grcStatus(ap); const g = ap.grc;
-    Object.assign(g, { stage: 'sent', sentAt: now, sentBy: cu().name, mapping: null, confirm: null });
+    Object.assign(g, { stage: 'sent', sentAt: now, sentBy: cu().name, mapping: null, confirm: null, withdrawnAt: null });
     audit('Kirim ke SI-GRC', ap.id, prev, 'Menunggu Pengelompokan Risiko', `${g.riskId} · ${g.recorded ? 'pembaruan' : 'input baru'}`);
   });
   appState.grcLog = appState.grcLog || [];
@@ -108,29 +119,38 @@ async function sendToGRC(ids) {
 }
 
 /* ------------------------------ Tahap 1–2 · MRDK ------------------------- */
-Actions.grcClassify = el => {
-  if (!isRole('admin')) return toast('Hanya Admin / MRDK yang dapat menandai penugasan strategis.', 'error');
-  const ap = findPlan(el.dataset.id); if (!ap) return;
-  const g = ap.grc || {};
+Actions.grcNote = el => {
+  if (!isRole('admin')) return;
+  const ap = findPlan(el.dataset.id); if (!ap) return; const g = ap.grc || {};
   openModal({
-    title: 'Penandaan Penugasan Strategis', sub: `<span class="mono">${ap.id}</span> · ${esc(ap.arahan.slice(0, 80))}${ap.arahan.length > 80 ? '…' : ''}`, size: 'sm',
-    body: `<label class="check"><input type="checkbox" id="gc-on" ${ap.strategic ? 'checked' : ''}><span><b>Penugasan strategis · berdampak OJK-wide</b><br><span class="small muted">Dikirim ke SI-GRC. Pengelompokan risiko ditetapkan Admin SI-GRC dan dikonfirmasi RQO satker.</span></span></label>
-      <div class="field" style="margin-top:12px"><label for="gc-note">Catatan untuk SI-GRC <span class="small muted">(opsional)</span></label><textarea class="textarea" id="gc-note" style="min-height:60px" placeholder="Mis. konteks arahan DK atau pertimbangan dampak OJK-wide">${esc(g.note || '')}</textarea></div>
-      ${g.recorded ? `<div class="ai-banner warn" style="margin-top:12px">${icon('info')}<span>Penugasan ini sudah tercatat di profil risiko ${esc(ap.satker)} (<span class="mono">${esc(g.riskId)}</span>). Pencabutan tanda akan diberitahukan ke Admin SI-GRC.</span></div>` : ''}`,
+    title: 'Catatan untuk SI-GRC', sub: `<span class="mono">${ap.id}</span> · ${esc(ap.arahan.slice(0, 80))}${ap.arahan.length > 80 ? '…' : ''}`, size: 'sm',
+    body: `<div class="small muted" style="margin-bottom:10px">Penugasan ini masuk SI-GRC otomatis karena cakupannya <b>OJK-wide</b>. Catatan bersifat opsional sebagai konteks bagi Admin SI-GRC.</div>
+      <div class="field"><label for="gc-note">Catatan MRDK</label><textarea class="textarea" id="gc-note" style="min-height:70px" placeholder="Mis. konteks arahan DK">${esc(g.note || '')}</textarea></div>`,
     foot: [{ label: 'Batal', cls: 'ghost' }, { label: 'Simpan', cls: 'primary', icon: 'save', onClick: m => {
-      const on = $('#gc-on', m.el).checked, note = $('#gc-note', m.el).value.trim(); const was = ap.strategic;
-      if (on === was && note === (g.note || '')) { m.close(); return; }
-      ap.strategic = on; ap.grc = { ...g, note, stage: g.stage || 'flagged', flaggedAt: g.flaggedAt || new Date().toISOString(), flaggedBy: g.flaggedBy || cu().name };
-      if (on !== was) audit('Tandai Strategis', ap.id, was ? 'Strategis OJK-wide' : 'Non-strategis', on ? 'Strategis OJK-wide' : 'Dicabut', note);
-      m.close(); toast(on ? (ap.satker ? 'Ditandai strategis · siap dikirim ke SI-GRC.' : 'Ditandai strategis. Tetapkan satker agar dapat dikirim.') : 'Tanda strategis dicabut.'); commit();
+      const note = $('#gc-note', m.el).value.trim(); if (note === (g.note || '')) { m.close(); return; }
+      ap.grc = { ...g, note }; audit('Catatan SI-GRC', ap.id, g.note || '-', note || '-'); m.close(); toast('Catatan disimpan.'); commit();
     } }]
   });
 };
+/* Pencabutan otomatis: penugasan yang sudah dikirim tetapi cakupannya tidak lagi OJK-wide. */
+function grcReconcile() {
+  const out = appState.actionPlans.filter(a => a.grc?.riskId && !a.grc.withdrawnAt && !inGRC(a));
+  if (!out.length) return;
+  const now = new Date().toISOString();
+  out.forEach(ap => {
+    const g = ap.grc; g.withdrawnAt = now; g.stage = 'withdrawn';
+    audit('Pencabutan dari SI-GRC', ap.id, 'OJK-wide', `Cakupan: ${ap.cls?.scope || 'belum ditetapkan'}`, `${g.riskId} · pemberitahuan pencabutan dikirim ke Admin SI-GRC`, GRC_SYS);
+  });
+  appState.grcLog = appState.grcLog || []; appState.seq.grcLog = (appState.seq.grcLog || 0) + 1;
+  appState.grcLog.unshift({ id: 'SYNC-' + String(appState.seq.grcLog).padStart(4, '0'), at: now, by: 'Sistem SI-RDK', endpoint: 'POST /api/grc/v1/risk-inputs/{ref}/withdraw', refs: out.map(a => a.id), result: out.map(a => `${a.id}: 202 Accepted (pencabutan)`), payload: out.map(a => ({ source_system: 'SI-RDK', source_ref: a.id, grc_ref: a.grc.riskId, action: 'withdraw', reason: `Cakupan dikoreksi menjadi ${a.cls?.scope || '-'}` })) });
+  notify(['admin'], `${out.length} penugasan ditarik dari SI-GRC karena cakupan tidak lagi OJK-wide (${out.map(a => a.id).join(', ')}).`, 'info', { type: 'grc' });
+}
+{ const _commit = commit; commit = (...a) => { try { grcReconcile(); } catch (e) { console.error(e); } return _commit(...a); }; }
 Actions.grcSync = el => {
   if (!isRole('admin')) return;
   const ids = el.dataset.id ? [el.dataset.id] : grcPlans().filter(a => GRC_SENDABLE.includes(grcStatus(a))).map(a => a.id);
   if (!ids.length) return toast('Tidak ada penugasan yang siap dikirim.', 'info');
-  confirmDialog({ title: 'Kirim ke SI-GRC?', message: `${ids.length} penugasan strategis akan dikirim ke <b>SI-GRC</b>. Admin SI-GRC akan mengelompokkan ke risiko yang sesuai dan menginputnya ke profil risiko satker, lalu dikonfirmasi RQO satker.`, confirmLabel: 'Kirim', onConfirm: () => sendToGRC(ids) });
+  confirmDialog({ title: 'Kirim ke SI-GRC?', message: `${ids.length} penugasan ber-cakupan OJK-wide akan dikirim ke <b>SI-GRC</b>. Admin SI-GRC akan mengelompokkan ke risiko yang sesuai dan menginputnya ke profil risiko satker, lalu dikonfirmasi RQO satker.`, confirmLabel: 'Kirim', onConfirm: () => sendToGRC(ids) });
 };
 
 /* ------------------------------ Tahap 3 · Admin SI-GRC (simulasi) -------- */
@@ -144,12 +164,13 @@ Actions.grcMap = el => {
         <dt>Penugasan</dt><dd>${esc(ap.arahan)}</dd>
         ${g.note ? `<dt>Catatan MRDK</dt><dd>${esc(g.note)}</dd>` : ''}
         <dt>Pelaksanaan</dt><dd>${statusHTML(ap)} ${ap.progress}% · target ${fmtDate(ap.targetDate)}</dd>
-        <dt>Indikator SI-RDK</dt><dd>${sigTag(s.level)} <span class="small muted">· ${esc(s.reason)}</span></dd>
-        ${g.recorded ? `<dt>Tercatat saat ini</dt><dd>${esc(g.recorded.category)} · ${esc(g.recorded.riskName)} · ${sigTag(g.recorded.level)}</dd>` : ''}
+        <dt>Kondisi pelaksanaan</dt><dd>${kondTag(s)} <span class="small muted">· ${esc(s.reason)}</span></dd>
+        <dt>Atribut SI-RDK</dt><dd>${esc(ap.cls?.horizon || '-')} · ${esc(ap.cls?.scope || '-')} <span class="small muted">(informasi pendukung)</span></dd>
+        ${g.recorded ? `<dt>Tercatat saat ini</dt><dd>${esc(g.recorded.category)} · ${esc(g.recorded.riskName)} · ${lvTag(g.recorded.level)}</dd>` : ''}
       </dl>
       <div class="form-grid">
         <div class="field"><label for="gm-cat">Kategori risiko <span class="req">*</span></label><select class="select" id="gm-cat"><option value="">— Pilih —</option>${GRC_CATEGORIES.map(c => `<option ${c === prev.category ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
-        <div class="field"><label for="gm-lv">Level risiko <span class="req">*</span></label><select class="select" id="gm-lv">${GRC_LEVELS.map(l => `<option ${l === (prev.level || s.level) ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+        <div class="field"><label for="gm-lv">Level risiko (skala SI-GRC) <span class="req">*</span></label><input class="input" id="gm-lv" list="gm-lv-list" value="${esc(prev.level || '')}" placeholder="Sesuai metodologi SI-GRC"><datalist id="gm-lv-list">${GRC_LEVEL_HINTS.map(l => `<option value="${l}">`).join('')}</datalist></div>
         <div class="field span-2"><label for="gm-name">Risiko pada profil risiko satker <span class="req">*</span></label><input class="input" id="gm-name" value="${esc(prev.riskName || '')}" placeholder="Mis. Keterlambatan penyelesaian kebijakan …"></div>
         <div class="field span-2"><label for="gm-note">Catatan Admin SI-GRC <span class="small muted">(opsional)</span></label><textarea class="textarea" id="gm-note" style="min-height:56px"></textarea></div>
       </div>`,
@@ -157,6 +178,7 @@ Actions.grcMap = el => {
       const category = $('#gm-cat', m.el).value, level = $('#gm-lv', m.el).value, riskName = $('#gm-name', m.el).value.trim(), note = $('#gm-note', m.el).value.trim();
       if (!category) { $('#gm-cat', m.el).classList.add('invalid'); return toast('⚠ Kategori risiko wajib dipilih.', 'error'); }
       if (!riskName) { $('#gm-name', m.el).classList.add('invalid'); return toast('⚠ Risiko pada profil risiko wajib diisi.', 'error'); }
+      if (!level.trim()) { $('#gm-lv', m.el).classList.add('invalid'); return toast('⚠ Level risiko wajib diisi.', 'error'); }
       g.mapping = { category, level, riskName, note, by: 'Admin SI-GRC', at: new Date().toISOString() }; g.stage = 'mapped';
       audit('Pengelompokan Risiko (SI-GRC)', ap.id, 'Menunggu Pengelompokan Risiko', 'Menunggu Konfirmasi RQO', `${g.riskId} · ${category} · ${riskName} · level ${level}${note ? ' · ' + note : ''}`, GRC_SYS);
       notify(['admin', 'satker:' + ap.satker], `${ap.id} dikelompokkan Admin SI-GRC sebagai ${category} — menunggu konfirmasi RQO ${satkerShort(ap.satker)}.`, 'info', { type: 'plan', id: ap.id });
@@ -176,7 +198,7 @@ Actions.grcConfirm = el => {
         <dt>Penugasan</dt><dd>${esc(ap.arahan)}</dd>
         <dt>Kategori risiko</dt><dd>${esc(mp.category)}</dd>
         <dt>Risiko</dt><dd>${esc(mp.riskName)}</dd>
-        <dt>Level</dt><dd>${sigTag(mp.level)}</dd>
+        <dt>Level (SI-GRC)</dt><dd>${lvTag(mp.level)}</dd>
         <dt>Diinput oleh</dt><dd>${esc(mp.by)} · ${fmtDT(mp.at)}${mp.note ? `<div class="tl-comment">${esc(mp.note)}</div>` : ''}</dd>
       </dl>
       <div class="field" style="margin-top:12px"><label for="gq-note">Catatan RQO <span class="small muted">(opsional)</span></label><textarea class="textarea" id="gq-note" style="min-height:56px"></textarea></div>`,
@@ -222,23 +244,23 @@ function grcStepsHTML(ap) {
   const who = (by, at) => by ? `<div class="tl-meta">${esc(by)} · ${fmtDT(at)}</div>` : '';
   const wait = t => `<div class="small" style="color:var(--warn-ink)">${t}</div>`;
   return `<div class="timeline">
-    ${step('1', 'Penandaan strategis', 'MRDK', 'green', `<div class="small">${g.note ? esc(g.note) : 'Penugasan strategis berdampak OJK-wide'}</div>${who(g.flaggedBy, g.flaggedAt)}`)}
-    ${step('2', 'Pengiriman ke SI-GRC', 'MRDK', sent ? 'green' : 'amber', sent ? `<div class="small">Terkirim · <span class="mono">${esc(g.riskId)}</span></div>${who(g.sentBy, g.sentAt)}` : ap.satker ? wait('Siap dikirim') : wait('Menunggu penetapan satker'))}
-    ${step('3', 'Pengelompokan & input profil risiko', 'Admin SI-GRC', g.mapping ? 'green' : g.stage === 'sent' ? 'amber' : '', g.mapping ? `<div class="small">${esc(g.mapping.category)} · ${esc(g.mapping.riskName)} · level <b>${esc(g.mapping.level)}</b></div>${g.mapping.note ? `<div class="tl-comment">${esc(g.mapping.note)}</div>` : ''}${who(g.mapping.by, g.mapping.at)}` : g.stage === 'sent' ? wait('Menunggu Admin SI-GRC') : '<div class="small muted">Belum</div>')}
+    ${step('1', 'Cakupan OJK-wide', 'MRDK · dikonfirmasi satker', grcScopeConfirmed(ap) || sent ? 'green' : 'amber', grcScopeConfirmed(ap) ? `<div class="small">Dicatat MRDK, dikonfirmasi satker${g.note ? ' · ' + esc(g.note) : ''}</div>${who(ap.cls.confirmedBy, ap.cls.confirmedAt)}` : sent ? '<div class="small">Cakupan OJK-wide (dicatat MRDK)</div>' : wait(ap.cls?.status === 'adjust' ? 'Satker mengajukan koreksi atribut' : 'Menunggu konfirmasi satker'))}
+    ${step('2', 'Pengiriman ke SI-GRC', 'MRDK', sent ? 'green' : grcScopeConfirmed(ap) ? 'amber' : '', sent ? `<div class="small">Terkirim · <span class="mono">${esc(g.riskId)}</span></div>${who(g.sentBy, g.sentAt)}` : !ap.satker ? wait('Menunggu penetapan satker') : grcScopeConfirmed(ap) ? wait('Siap dikirim') : '<div class="small muted">Setelah cakupan dikonfirmasi</div>')}
+    ${step('3', 'Pengelompokan & input profil risiko', 'Admin SI-GRC', g.mapping ? 'green' : g.stage === 'sent' ? 'amber' : '', g.mapping ? `<div class="small">${esc(g.mapping.category)} · ${esc(g.mapping.riskName)} · level ${lvTag(g.mapping.level)}</div>${g.mapping.note ? `<div class="tl-comment">${esc(g.mapping.note)}</div>` : ''}${who(g.mapping.by, g.mapping.at)}` : g.stage === 'sent' ? wait('Menunggu Admin SI-GRC') : '<div class="small muted">Belum</div>')}
     ${step('4', 'Konfirmasi RQO satker', 'SI-GRC', g.confirm ? 'green' : g.stage === 'mapped' ? 'amber' : '', g.confirm ? `<div class="small">Dikonfirmasi · tercatat di profil risiko</div>${g.confirm.note ? `<div class="tl-comment">${esc(g.confirm.note)}</div>` : ''}${who(g.confirm.by, g.confirm.at)}` : g.stage === 'mapped' ? wait('Menunggu Risk & Quality Officer') : '<div class="small muted">Belum</div>')}
   </div>`;
 }
 function grcDrawerSection(ap) {
   const admin = isRole('admin');
-  if (!ap.strategic) return `<div class="d-sec"><div class="section-label"><span>Integrasi SI-GRC</span>${admin ? `<button class="btn xs" data-act="grcClassify" data-id="${ap.id}">${icon('flag', 'sm')}Tandai strategis</button>` : ''}</div><div class="small muted">Bukan penugasan strategis OJK-wide — tidak dialirkan ke SI-GRC.</div></div>`;
+  if (!inGRC(ap)) { const w = ap.grc?.withdrawnAt; return `<div class="d-sec"><div class="section-label"><span>Integrasi SI-GRC</span></div><div class="small muted">Tidak dialirkan ke SI-GRC — cakupan ${ap.cls ? `<b>${esc(ap.cls.scope)}</b>` : 'belum ditetapkan'}. Penugasan masuk SI-GRC otomatis bila cakupannya OJK-wide.</div>${w ? `<div class="ai-banner" style="margin-top:10px">${icon('info')}<span>Ditarik dari SI-GRC pada ${fmtDT(w)} (<span class="mono">${esc(ap.grc.riskId)}</span>) karena cakupan dikoreksi.</span></div>` : ''}</div>`; }
   const st = grcStatus(ap); const s = grcSignal(ap); const g = ap.grc || {};
   const kv = (k, v) => `<dt>${k}</dt><dd>${v}</dd>`;
-  return `<div class="d-sec"><div class="section-label"><span>Integrasi SI-GRC</span>${admin ? `<button class="btn xs" data-act="grcClassify" data-id="${ap.id}">${icon('sliders', 'sm')}Ubah tanda</button>` : ''}</div><dl class="kv">
-      ${kv('Klasifikasi', strategicTag() + ' <span class="small muted">dampak OJK-wide</span>')}
+  return `<div class="d-sec"><div class="section-label"><span>Integrasi SI-GRC</span>${admin ? `<button class="btn xs" data-act="grcNote" data-id="${ap.id}">${icon('pencil', 'sm')}Catatan</button>` : ''}</div><dl class="kv">
+      ${kv('Dasar', strategicTag() + ` <span class="small muted">cakupan OJK-wide · ${esc(ap.cls.horizon)} · ${QUADRANTS[quadOf(ap)]?.label || ''}</span>`)}
       ${kv('Pemilik risiko', ap.satker ? esc(ap.satker) : '<span style="color:var(--warn-ink)">Belum ditugaskan</span>')}
       ${kv('Status', badge(st))}
-      ${kv('Indikator pelaksanaan', `${sigTag(s.level)} <span class="small muted">· ${esc(s.reason)}</span>`)}
-      ${kv('Tercatat di profil risiko', g.recorded ? `${esc(g.recorded.category)} · ${esc(g.recorded.riskName)} · ${sigTag(g.recorded.level)} <span class="small muted">· <span class="mono">${esc(g.riskId)}</span></span>` : '<span class="muted">Belum tercatat</span>')}
+      ${kv('Kondisi pelaksanaan', `${kondTag(s)} <span class="small muted">· ${esc(s.reason)}</span>`)}
+      ${kv('Tercatat di profil risiko', g.recorded ? `${esc(g.recorded.category)} · ${esc(g.recorded.riskName)} · Level risiko (ditetapkan SI-GRC): ${lvTag(g.recorded.level)} <span class="small muted">· <span class="mono">${esc(g.riskId)}</span></span>` : '<span class="muted">Belum tercatat</span>')}
     </dl>
     ${st === 'Perlu Sinkron Ulang' ? `<div class="ai-banner violet" style="margin-top:12px">${icon('rerun')}<span>Data pelaksanaan berubah sejak tercatat di SI-GRC. Kirim pembaruan agar profil risiko satker mutakhir.</span></div>` : ''}
     <div class="section-label" style="margin-top:14px">Tahapan</div>${grcStepsHTML(ap)}
@@ -249,37 +271,37 @@ function grcDrawerSection(ap) {
 /* ------------------------------ Halaman ---------------------------------- */
 function grcRows() {
   const f = ui.grc; const q = f.q.trim().toLowerCase(); const mine = new Set(grcTodo().map(a => a.id));
-  const lv = { Tinggi: 0, Sedang: 1, Rendah: 2 };
   return grcPlans().filter(a =>
     (!f.status || grcStatus(a) === f.status) && (!f.satker || a.satker === f.satker) &&
     (!q || [a.id, a.arahan, a.satker, a.grc?.recorded?.category, a.grc?.mapping?.riskName, a.grc?.riskId, a.topic].some(v => String(v || '').toLowerCase().includes(q)))
-  ).sort((a, b) => (mine.has(b.id) - mine.has(a.id)) || GRC_STATUSES.indexOf(grcStatus(a)) - GRC_STATUSES.indexOf(grcStatus(b)) || lv[grcSignal(a).level] - lv[grcSignal(b).level] || a.id.localeCompare(b.id));
+  ).sort((a, b) => (mine.has(b.id) - mine.has(a.id)) || GRC_STATUSES.indexOf(grcStatus(a)) - GRC_STATUSES.indexOf(grcStatus(b)) || KOND_ORDER[grcSignal(a).kond] - KOND_ORDER[grcSignal(b).kond] || a.id.localeCompare(b.id));
 }
 function grcTableHTML() {
   const rows = grcRows();
-  if (!rows.length) return `<div class="empty"><b>Tidak ada penugasan</b>${isRole('admin') ? 'Ubah filter, atau tandai penugasan strategis dari detail rencana aksi.' : 'Ubah filter pencarian.'}</div>`;
-  return `<div class="tbl-wrap has-cards"><table class="rt cards"><thead><tr><th>ID</th><th>Poin Arahan</th><th>Satker Pemilik Risiko</th><th>Indikator Pelaksanaan</th><th>Status</th><th>Pengelompokan Risiko (SI-GRC)</th><th>Action</th></tr></thead><tbody>
+  if (!rows.length) return `<div class="empty"><b>Tidak ada penugasan</b>${isRole('admin') ? 'Penugasan masuk otomatis bila cakupannya OJK-wide (atur di Atensi & Trajectory).' : 'Ubah filter pencarian.'}</div>`;
+  return `<div class="tbl-wrap has-cards"><table class="rt cards"><thead><tr><th>ID</th><th>Poin Arahan</th><th>Satker Pemilik Risiko</th><th>Kondisi Pelaksanaan</th><th>Status</th><th>Pengelompokan Risiko (SI-GRC)</th><th>Action</th></tr></thead><tbody>
     ${rows.map(a => { const st = grcStatus(a); const s = grcSignal(a); const g = a.grc || {}; const mp = g.mapping || g.recorded; return `<tr class="clickable" tabindex="0" data-act="openPlan" data-id="${a.id}">
       <td data-label="ID"><span class="id">${a.id}</span>${g.riskId ? `<div class="mono small muted nowrap">${esc(g.riskId)}</div>` : ''}</td>
       <td data-label="Poin Arahan" class="arahan full"><span class="clamp-2">${esc(a.arahan)}</span></td>
       <td data-label="Satker">${a.satker ? `<span style="display:block;min-width:130px">${esc(a.satker)}</span>` : '<span style="color:var(--warn-ink)">Belum ditugaskan</span>'}</td>
-      <td data-label="Indikator">${sigTag(s.level)}<div class="small muted" style="min-width:130px">${esc(s.reason)}</div></td>
+      <td data-label="Kondisi">${kondTag(s)}<div class="small muted" style="min-width:130px">${esc(s.reason)}</div></td>
       <td data-label="Status">${badge(st)}</td>
-      <td data-label="Pengelompokan Risiko">${mp ? `<div class="small" style="min-width:170px"><b style="font-weight:600">${esc(mp.category)}</b> · ${sigTag(mp.level)}<div class="muted clamp-2">${esc(mp.riskName)}</div></div>` : '<span class="muted small">Belum dikelompokkan</span>'}</td>
+      <td data-label="Pengelompokan Risiko">${mp ? `<div class="small" style="min-width:170px"><b style="font-weight:600">${esc(mp.category)}</b> · ${lvTag(mp.level)}<div class="muted clamp-2">${esc(mp.riskName)}</div></div>` : '<span class="muted small">Belum dikelompokkan</span>'}</td>
       <td data-label=""><div class="btn-group" style="flex-wrap:nowrap;gap:4px">${grcActionButtons(a, 'xs')}<button class="btn xs" data-act="grcPayload" data-id="${a.id}" title="Lihat data pertukaran">${icon('eye', 'sm')}</button></div></td>
     </tr>`; }).join('')}
-  </tbody></table></div><div class="tbl-foot"><span><b class="tnum">${rows.length}</b> dari <b class="tnum">${grcPlans().length}</b> penugasan strategis</span></div>`;
+  </tbody></table></div><div class="tbl-foot"><span><b class="tnum">${rows.length}</b> dari <b class="tnum">${grcPlans().length}</b> penugasan ber-cakupan OJK-wide</span></div>`;
 }
 function grcProfileRows() {
   const by = {};
   grcPlans().filter(a => a.satker).forEach(a => { (by[a.satker] = by[a.satker] || []).push(a); });
   return Object.entries(by).map(([name, list]) => {
-    const lv = { Tinggi: 0, Sedang: 0, Rendah: 0 }; list.forEach(a => { if (a.grc?.recorded) lv[a.grc.recorded.level]++; });
-    const proc = list.filter(a => ['Siap Dikirim', 'Menunggu Pengelompokan Risiko', 'Menunggu Konfirmasi RQO', 'Perlu Sinkron Ulang'].includes(grcStatus(a))).length;
-    return { name, info: satkerInfo(name), list, lv, proc };
-  }).sort((a, b) => b.lv.Tinggi - a.lv.Tinggi || b.lv.Sedang - a.lv.Sedang || b.list.length - a.list.length);
+    const lv = {}; let rec = 0; list.forEach(a => { if (a.grc?.recorded) { rec++; lv[a.grc.recorded.level] = (lv[a.grc.recorded.level] || 0) + 1; } });
+    const proc = list.filter(a => ['Menunggu Konfirmasi Cakupan', 'Siap Dikirim', 'Menunggu Pengelompokan Risiko', 'Menunggu Konfirmasi RQO', 'Perlu Sinkron Ulang'].includes(grcStatus(a))).length;
+    return { name, info: satkerInfo(name), list, lv, rec, proc };
+  }).sort((a, b) => b.rec - a.rec || b.list.length - a.list.length || a.name.localeCompare(b.name));
 }
 const GRC_STAGE_CARDS = [
+  { s: 'Menunggu Konfirmasi Cakupan', who: 'Satker · konfirmasi atribut', ic: 'users', tone: 'grey' },
   { s: 'Siap Dikirim', who: 'Admin MRDK · SI-RDK', ic: 'send', tone: 'blue' },
   { s: 'Menunggu Pengelompokan Risiko', who: 'Admin SI-GRC', ic: 'layers', tone: 'amber' },
   { s: 'Menunggu Konfirmasi RQO', who: 'RQO satker · SI-GRC', ic: 'shield', tone: 'amber' },
@@ -294,34 +316,34 @@ registerPage('grc', {
     const prof = grcProfileRows(); const logs = role === 'satker' ? [] : (appState.grcLog || []).slice(0, 12);
     const bulk = all.filter(a => GRC_SENDABLE.includes(grcStatus(a))).length;
     const roleNote = {
-      admin: 'Anda menandai penugasan strategis dan mengirimnya ke SI-GRC.',
+      admin: 'Anda mengirim penugasan ber-cakupan OJK-wide yang sudah dikonfirmasi satker ke SI-GRC.',
       satker: 'Mode baca: status penugasan Satker Anda yang dialirkan ke SI-GRC.', viewer: 'Mode baca saja.'
     }[role] || '';
     const todoLabel = { admin: 'siap/perlu dikirim ke SI-GRC' }[role];
     return `<div class="page">
-      <div class="page-head"><div><div class="crumb">Integrasi · SI-GRC</div><h1>Integrasi SI-GRC</h1><div class="sub">Penugasan <b>strategis yang berdampak OJK-wide</b> dialirkan ke SI-GRC sebagai input <b>profil risiko satuan kerja pengampu</b>. ${roleNote}</div></div>
+      <div class="page-head"><div><div class="crumb">Integrasi · SI-GRC</div><h1>Integrasi SI-GRC</h1><div class="sub">Penugasan dengan <b>cakupan OJK-wide</b> (atribut atensi yang dikonfirmasi satker) otomatis dialirkan ke SI-GRC sebagai input <b>profil risiko satuan kerja pengampu</b>. ${roleNote}</div></div>
         <div class="btn-group">${role === 'satker' ? '' : exportButtons('grc')}${role === 'admin' ? `<button class="btn primary" data-act="grcSync" ${bulk ? '' : 'disabled'}>${icon('send')}Kirim ${bulk ? bulk + ' ' : ''}ke SI-GRC</button>` : ''}</div></div>
       ${todo.length && todoLabel ? `<div class="ai-banner warn">${icon('bell')}<span><b>${todo.length} penugasan ${todoLabel}:</b> ${todo.slice(0, 6).map(a => `<button class="link-btn mono" data-act="openPlan" data-id="${a.id}">${a.id}</button>`).join(', ')}${todo.length > 6 ? ' …' : ''}</span></div>` : ''}
       <section class="panel flow" aria-label="Tahapan pengaliran data ke SI-GRC">
         <div class="flow-top"><div class="section-label">Tahapan</div>
           <div class="flow-src"><span class="pill core">SI-RDK</span>${icon('arrowRight', 'sm')}<span class="pill">${esc(GRC_ENDPOINT)}</span>${icon('arrowRight', 'sm')}<span class="pill core">SI-GRC</span>${icon('arrowRight', 'sm')}<span class="pill">status balik ke SI-RDK</span></div></div>
         <div class="steps">
-          <div class="step"><span class="n">01</span><span style="min-width:0"><b>Penandaan Strategis</b><small>Admin MRDK · SI-RDK<br>Tandai penugasan strategis OJK-wide</small></span></div>
-          <div class="step"><span class="n">02</span><span style="min-width:0"><b>Kirim ke SI-GRC</b><small>Admin MRDK · SI-RDK<br>Data penugasan & indikator pelaksanaan</small></span></div>
+          <div class="step"><span class="n">01</span><span style="min-width:0"><b>Cakupan OJK-wide</b><small>MRDK mencatat · satker mengonfirmasi<br>Otomatis masuk antrean SI-GRC</small></span></div>
+          <div class="step"><span class="n">02</span><span style="min-width:0"><b>Kirim ke SI-GRC</b><small>Admin MRDK · SI-RDK<br>Data penugasan & kondisi pelaksanaan</small></span></div>
           <div class="step green"><span class="n">03</span><span style="min-width:0"><b>Pengelompokan Risiko</b><small>Admin SI-GRC · SI-GRC<br>Tetapkan kategori & risiko, input ke profil risiko satker</small></span></div>
           <div class="step green"><span class="n">04</span><span style="min-width:0"><b>Konfirmasi RQO</b><small>Risk & Quality Officer satker · SI-GRC<br>Konfirmasi → <b>selesai</b></small></span></div>
         </div>
-        <div class="small muted" style="padding:0 18px 14px">Kategori, nama risiko, dan level ditetapkan sepenuhnya di SI-GRC. Indikator pelaksanaan dari SI-RDK hanya bahan pertimbangan. Perubahan data pelaksanaan setelah selesai otomatis ditandai <i>Perlu Sinkron Ulang</i>.</div>
+        <div class="small muted" style="padding:0 18px 14px">SI-RDK tidak menilai risiko: kategori, nama risiko, dan level ditetapkan sepenuhnya di SI-GRC dengan metodologinya sendiri dan ditampilkan apa adanya. Kategori atensi tidak menentukan masuk/tidaknya. Perubahan data pelaksanaan setelah selesai ditandai <i>Perlu Sinkron Ulang</i>; bila cakupan dikoreksi bukan OJK-wide, penugasan otomatis ditarik dan Admin SI-GRC diberi tahu.</div>
       </section>
-      <section class="kpis" aria-label="Status per tahapan" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+      <section class="kpis" aria-label="Status per tahapan" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
         ${GRC_STAGE_CARDS.map(c => { const n = all.filter(a => grcStatus(a) === c.s).length; return `<button class="kpi t-${c.tone}" data-act="grcStage" data-s="${esc(c.s)}" ${f.status === c.s ? 'style="outline:2px solid var(--blue);outline-offset:-2px"' : ''}><div class="k-label"><span>${esc(c.s)}</span><span class="k-ic">${icon(c.ic, 'sm')}</span></div><div class="k-val">${n}</div><div class="k-sub">${esc(c.who)}</div></button>`; }).join('')}
       </section>
       <section class="panel"><div class="panel-head"><div><h3>Profil Risiko per Satker Pemilik Risiko</h3><div class="desc">Hanya yang sudah <b>dikonfirmasi RQO</b> dihitung tercatat · klik baris untuk melihat penugasannya</div></div></div>
-        ${prof.length ? `<div class="tbl-wrap has-cards"><table class="rt cards"><thead><tr><th>Satker Pemilik Risiko</th><th>Penugasan Strategis</th><th>Tercatat · Tinggi</th><th>Tercatat · Sedang</th><th>Tercatat · Rendah</th><th>Dalam Proses</th></tr></thead><tbody>
-          ${prof.map(p => `<tr class="clickable" tabindex="0" data-act="grcPickSatker" data-s="${esc(p.name)}"><td data-label="Satker"><b style="font-weight:600">${esc(p.name)}</b><div class="small muted">${esc(p.info?.bidang || '')}</div></td><td data-label="Penugasan" class="tnum">${p.list.length}</td><td data-label="Tinggi" class="tnum">${p.lv.Tinggi ? `<span class="prio Tinggi">${p.lv.Tinggi}</span>` : '0'}</td><td data-label="Sedang" class="tnum">${p.lv.Sedang ? `<span class="prio Sedang">${p.lv.Sedang}</span>` : '0'}</td><td data-label="Rendah" class="tnum">${p.lv.Rendah}</td><td data-label="Dalam proses" class="tnum">${p.proc}</td></tr>`).join('')}
-        </tbody></table></div>` : '<div class="empty"><b>Belum ada data</b>Belum ada penugasan strategis dengan satker pengampu.</div>'}
+        ${prof.length ? `<div class="tbl-wrap has-cards"><table class="rt cards"><thead><tr><th>Satker Pemilik Risiko</th><th>Masuk SI-GRC</th><th>Tercatat di Profil Risiko</th><th>Dalam Proses</th><th>Level Risiko (ditetapkan SI-GRC)</th></tr></thead><tbody>
+          ${prof.map(p => `<tr class="clickable" tabindex="0" data-act="grcPickSatker" data-s="${esc(p.name)}"><td data-label="Satker"><b style="font-weight:600">${esc(p.name)}</b><div class="small muted">${esc(p.info?.bidang || '')}</div></td><td data-label="Masuk SI-GRC" class="tnum">${p.list.length}</td><td data-label="Tercatat" class="tnum">${p.rec}</td><td data-label="Dalam proses" class="tnum">${p.proc}</td><td data-label="Level (SI-GRC)">${Object.entries(p.lv).map(([l, n]) => `${lvTag(l)} <span class="small tnum">${n}</span>`).join(' ') || '<span class="muted small">—</span>'}</td></tr>`).join('')}
+        </tbody></table></div>` : '<div class="empty"><b>Belum ada data</b>Belum ada penugasan ber-cakupan OJK-wide dengan satker pengampu.</div>'}
       </section>
-      <section class="panel" id="grc-list"><div class="panel-head"><div><h3>Penugasan Strategis · OJK-wide</h3><div class="desc">Yang menunggu tindakan Anda ditampilkan paling atas</div></div></div>
+      <section class="panel" id="grc-list"><div class="panel-head"><div><h3>Penugasan Cakupan OJK-wide</h3><div class="desc">Yang menunggu tindakan Anda ditampilkan paling atas</div></div></div>
         <div class="toolbar">
           <div class="grow">${icon('search')}<input class="input" placeholder="Cari ID, poin arahan, satker, kategori/risiko, ID SI-GRC…" value="${esc(f.q)}" data-input="grcSearch"></div>
           <select class="select sm" id="gf-status" data-change="grcFilter" aria-label="Status">${optList(GRC_STATUSES, f.status, 'Semua status')}</select>
@@ -339,12 +361,12 @@ registerPage('grc', {
 });
 
 Exporters.grc = () => ({
-  name: 'Penugasan_Strategis_SI-GRC', sheet: 'SI-GRC', title: 'Penugasan Strategis OJK-wide · Pengaliran ke SI-GRC', subtitle: `${grcRows().length} penugasan strategis`, rows: grcRows(),
+  name: 'Penugasan_OJK-wide_SI-GRC', sheet: 'SI-GRC', title: 'Penugasan Cakupan OJK-wide · Pengaliran ke SI-GRC', subtitle: `${grcRows().length} penugasan`, rows: grcRows(),
   columns: [
     { label: 'ID', get: a => a.id, w: 13 }, { label: 'ID SI-GRC', get: a => a.grc?.riskId || '', w: 16 }, { label: 'Poin Arahan', get: a => a.arahan, w: 70 }, { label: 'Satker Pemilik Risiko', get: a => a.satker, w: 40 },
     { label: 'Catatan MRDK', get: a => a.grc?.note || '', w: 36 }, { label: 'Progress (%)', get: a => a.progress, w: 11 }, { label: 'Status Pelaksanaan', get: a => execStatus(a), w: 18 },
-    { label: 'Indikator Pelaksanaan', get: a => grcSignal(a).level, w: 12 }, { label: 'Status', get: a => grcStatus(a), w: 28 },
+    { label: 'Horizon', get: a => a.cls?.horizon || '', w: 14 }, { label: 'Kategori Atensi', get: a => QUADRANTS[quadOf(a)]?.label || '', w: 18 }, { label: 'Kondisi Pelaksanaan', get: a => grcSignal(a).kond, w: 16 }, { label: 'Status', get: a => grcStatus(a), w: 28 },
     { label: 'Kategori Risiko', get: a => (a.grc?.mapping || a.grc?.recorded)?.category || '', w: 20 }, { label: 'Risiko', get: a => (a.grc?.mapping || a.grc?.recorded)?.riskName || '', w: 50 },
-    { label: 'Level', get: a => (a.grc?.mapping || a.grc?.recorded)?.level || '', w: 10 }, { label: 'Dikelompokkan oleh', get: a => a.grc?.mapping?.by || '', w: 18 }, { label: 'Dikonfirmasi RQO', get: a => a.grc?.confirm?.by || '', w: 18 }
+    { label: 'Level Risiko (SI-GRC)', get: a => (a.grc?.mapping || a.grc?.recorded)?.level || '', w: 16 }, { label: 'Dikelompokkan oleh', get: a => a.grc?.mapping?.by || '', w: 18 }, { label: 'Dikonfirmasi RQO', get: a => a.grc?.confirm?.by || '', w: 18 }
   ]
 });

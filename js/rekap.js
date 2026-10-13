@@ -28,7 +28,7 @@ function rkPlan(ap, D) {
     if (ended.length && prog < ended.at(-1).target) behind = true;
   }
   const q = quadOf(ap);
-  return { ap, ver, rep, prog, st, late, pend, behind, p12: q === 'AK' || q === 'AT', strat: !!ap.strategic };
+  return { ap, ver, rep, prog, st, late, pend, behind, p12: q === 'AK' || q === 'AT', strat: inGRC(ap) };
 }
 function rkAgg(items) {
   const n = items.length; const sum = k => items.reduce((a, x) => a + x[k], 0);
@@ -56,7 +56,7 @@ function rekapData() {
 
 const RK_COLS = [
   ['n', 'Penugasan'], ['selesai', 'Selesai'], ['proses', 'Dalam Proses'], ['belum', 'Menunggu Respon'], ['late', 'Label Terlambat'], ['pend', 'Menunggu Verifikasi'],
-  ['avg', 'Rata-rata Progres'], ['avgRep', 'Rata-rata Dilaporkan'], ['behind', 'Tertinggal Trajectory'], ['p12', 'Atensi Khusus/Tinggi'], ['strat', 'Strategis (SI-GRC)']
+  ['avg', 'Rata-rata Progres'], ['avgRep', 'Rata-rata Dilaporkan'], ['behind', 'Tertinggal Trajectory'], ['p12', 'Atensi Khusus/Tinggi'], ['strat', 'Masuk SI-GRC (OJK-wide)']
 ];
 function rkCells(k, strong) {
   const v = (key, val) => {
@@ -122,7 +122,7 @@ Exporters.rekap = () => {
     { label: 'Penugasan', get: r => r.k.n, w: 11 }, { label: 'Selesai', get: r => r.k.selesai, w: 9 }, { label: 'Dalam Proses', get: r => r.k.proses, w: 12 }, { label: 'Menunggu Respon', get: r => r.k.belum, w: 15 },
     { label: 'Label Terlambat', get: r => r.k.late, w: 14 }, { label: 'Menunggu Verifikasi', get: r => r.k.pend, w: 18 },
     { label: `Rata-rata Progres ${verified ? 'Terverifikasi' : 'Dilaporkan'} (%)`, get: r => r.k.avg, w: 26 }, ...(verified ? [{ label: 'Rata-rata Dilaporkan (%)', get: r => r.k.avgRep, w: 22 }] : []),
-    { label: 'Completion Rate (%)', get: r => r.k.rate, w: 18 }, { label: 'Tertinggal Trajectory', get: r => r.k.behind, w: 18 }, { label: 'Atensi Khusus/Tinggi', get: r => r.k.p12, w: 14 }, { label: 'Strategis (SI-GRC)', get: r => r.k.strat, w: 16 }
+    { label: 'Completion Rate (%)', get: r => r.k.rate, w: 18 }, { label: 'Tertinggal Trajectory', get: r => r.k.behind, w: 18 }, { label: 'Atensi Khusus/Tinggi', get: r => r.k.p12, w: 14 }, { label: 'Masuk SI-GRC (OJK-wide)', get: r => r.k.strat, w: 16 }
   ];
   const combined = [];
   d.groups.filter(g => ui.rekap.showEmpty || g.items.length).forEach(g => { combined.push({ lvl: 'Bidang', code: g.code, name: g.name, k: g.k }); g.sats.filter(s => ui.rekap.showEmpty || s.items.length).forEach(s => combined.push({ lvl: 'Satker', code: s.key, name: s.name, bidang: g.code, k: s.k })); });
@@ -137,7 +137,7 @@ Exporters.rekap = () => {
         { label: 'Tanggal RDK', get: x => x.ap.rdkDate, w: 12 }, { label: 'Target Selesai', get: x => x.ap.targetDate, w: 13 },
         { label: 'Progres Terverifikasi (%)', get: x => x.ver, w: 14 }, { label: 'Progres Dilaporkan (%)', get: x => x.rep, w: 14 }, { label: 'Status (per posisi)', get: x => x.st, w: 16 }, { label: 'Label Terlambat', get: x => x.late ? 'Ya' : '', w: 12 },
         { label: 'Status Verifikasi', get: x => x.ap.verificationStatus, w: 18 }, { label: 'Menunggu Verifikasi', get: x => x.pend ? 'Ya' : '', w: 12 }, { label: 'Kategori Atensi', get: x => quadOf(x.ap) ? QUADRANTS[quadOf(x.ap)].label : '', w: 18 }, { label: 'Tertinggal Trajectory', get: x => x.behind ? 'Ya' : '', w: 12 },
-        { label: 'Strategis (SI-GRC)', get: x => x.strat ? 'Ya' : '', w: 12 }, { label: 'Disposisi ADK (SIPENA)', get: x => dispExport(x.ap), w: 30 }
+        { label: 'Masuk SI-GRC (OJK-wide)', get: x => x.strat ? 'Ya' : '', w: 14 }, { label: 'Disposisi ADK (SIPENA)', get: x => dispExport(x.ap), w: 30 }
       ] }
     ]
   };
