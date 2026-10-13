@@ -52,7 +52,7 @@ OCR/LLM hanya mengambil bagian **Arahan**: penerima arahan → satker/bidang pen
 
 ## Integrasi SIPENA — disposisi ADK (simulasi)
 
-Berlaku **khusus Laporan Singkat Raker/RDP dengan Komisi XI DPR RI**. Arahan RDK (Keputusan RDK, ND Arahan DK) tidak memakai disposisi.
+Berlaku **khusus Laporan Singkat Raker/RDP dengan Komisi XI DPR RI**. Arahan RDK (Keputusan RDK) tidak memakai disposisi.
 
 1. **Tarik otomatis** — laporan singkat beserta disposisi ADK ditarik dari SIPENA (tombol *Tarik dari SIPENA* di Dokumen Rujukan; produksi: penarikan terjadwal ke `GET /api/sipena/v1/naskah?jenis=lapsing-dpr`). Dokumen tercatat dengan pengunggah "SIPENA (otomatis)" dan nomor agenda SIPENA.
 2. **Dua sumber, dua peran** — *Laporan singkat* menentukan **apa** yang ditindaklanjuti (butir Kesimpulan/Keputusan, dipecah LLM menjadi poin). *Disposisi ADK di SIPENA* menentukan **siapa** yang menyelesaikan (satker). LLM tidak menetapkan satker. Jika disposisi hanya ke satu satker, semua poin otomatis ke satker itu; jika ke beberapa satker, sistem membuat pemetaan awal per poin yang ditandai "perlu dicek MRDK".

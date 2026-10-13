@@ -168,7 +168,7 @@ registerPage('documents', {
     const f = ui.docs;
     const sortVal = `${f.sort.key}:${f.sort.dir}`;
     return `<div class="page">
-      <div class="page-head"><div><div class="crumb">Dokumen · Dokumen Rujukan</div><h1>Dokumen Rujukan</h1><div class="sub">Naskah arahan RDK, laporan Komisi XI, dan rujukan lain yang menjadi dasar rencana aksi.</div></div>
+      <div class="page-head"><div><div class="crumb">Dokumen · Dokumen Rujukan</div><h1>Dokumen Rujukan</h1><div class="sub">Keputusan RDK dan Laporan Singkat Raker/RDP Komisi XI DPR RI yang menjadi dasar rencana aksi.</div></div>
         ${admin ? '' : `<span class="readonly-note">${icon('lock', 'sm')}Mode baca saja</span>`}</div>
       ${admin ? `<section class="panel"><div class="panel-head"><div><h3>Integrasi SIPENA</h3><div class="desc">Laporan Singkat Raker/RDP Komisi XI DPR RI beserta <b>disposisi ADK</b> ditarik otomatis dari SIPENA. Satker penanggung jawab mengikuti tujuan disposisi. Penarikan terakhir: ${appState.sipenaPulledAt ? fmtDT(appState.sipenaPulledAt) : fmtDT(appState.documents.filter(d => d.sipena).map(d => d.sipena.pulledAt).sort().at(-1))} · <span class="mono small">${esc(SIPENA_ENDPOINT)}</span></div></div><button class="btn sm primary" data-act="sipenaPull">${icon('download')}Tarik dari SIPENA</button></div></section>` : ''}
       ${admin ? `<section class="panel"><div class="panel-head"><div><h3>Upload Dokumen</h3><div class="desc">PDF, DOCX, atau hasil pindai (JPG/PNG/TIFF), maks. 25 MB per berkas. Dokumen diproses otomatis setelah diunggah.</div></div></div>
