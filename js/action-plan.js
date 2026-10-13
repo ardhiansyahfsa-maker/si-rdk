@@ -56,6 +56,7 @@ function filterPlans(plans, f) {
     if (f.priority && a.priority !== f.priority) return false;
     if (f.strat === 'Masuk SI-GRC (OJK-wide)' && !inGRC(a)) return false;
     if (f.strat === 'Tidak masuk SI-GRC' && inGRC(a)) return false;
+    if (f.strat === 'Penyesuaian ketentuan (IRU)' && !regNeeded(a)) return false;
     if (f.disp) { const pd = planDisp(a); if (f.disp === 'Lapsing DPR (SIPENA)' ? !pd : f.disp === 'Sesuai disposisi' ? !(pd && pd.disp) : !(pd && pd.deviated)) return false; }
     if (f.rdkFrom && a.rdkDate < f.rdkFrom) return false;
     if (f.rdkTo && a.rdkDate > f.rdkTo) return false;
@@ -123,7 +124,7 @@ registerPage('register', {
           <div class="field"><label for="rf-prog">Progress</label><select class="select sm" id="rf-prog" data-change="regFilter"><option value="">Semua</option>${[['0', '0% (belum mulai)'], ['1-49', '1–49%'], ['50-99', '50–99%'], ['100', '100%']].map(([v, l]) => `<option value="${v}" ${f.prog === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
           <div class="field"><label for="rf-targetTo">Target selesai s.d.</label><input class="input sm" type="date" id="rf-targetTo" value="${esc(f.targetTo)}" data-change="regFilter"></div>
           <div class="field"><label for="rf-priority">Kategori atensi</label><select class="select sm" id="rf-priority" data-change="regFilter">${optList(PRIORITIES, f.priority, 'Semua')}</select></div>
-          <div class="field"><label for="rf-strat">SI-GRC</label><select class="select sm" id="rf-strat" data-change="regFilter">${optList(['Masuk SI-GRC (OJK-wide)', 'Tidak masuk SI-GRC'], f.strat, 'Semua')}</select></div>
+          <div class="field"><label for="rf-strat">SI-GRC</label><select class="select sm" id="rf-strat" data-change="regFilter">${optList(['Masuk SI-GRC (OJK-wide)', 'Tidak masuk SI-GRC', 'Penyesuaian ketentuan (IRU)'], f.strat, 'Semua')}</select></div>
           <div class="field"><label for="rf-disp">Disposisi SIPENA</label><select class="select sm" id="rf-disp" data-change="regFilter">${optList(['Lapsing DPR (SIPENA)', 'Sesuai disposisi', 'Di luar disposisi'], f.disp, 'Semua')}</select></div>
           <div class="field"><label>Sesi RDK</label><select class="select sm" data-change="regRdk" aria-label="Pilih sesi RDK"><option value="">Pilih tanggal…</option>${rdkDates.map(d => `<option value="${d}" ${f.rdkFrom === d && f.rdkTo === d ? 'selected' : ''}>${fmtDate(d)}</option>`).join('')}</select></div>
         </div>
@@ -235,6 +236,7 @@ function renderPlanDetail(ap) {
       </dl></div>
       ${trajDrawerSection(ap)}
       ${grcDrawerSection(ap)}
+      ${iruDrawerSection(ap)}
       <div class="d-sec"><div class="section-label">Status</div><dl class="kv">
         ${kv('Status', statusHTML(ap, true))}
         ${kv('Progress', pbar(ap))}

@@ -5,7 +5,7 @@
    opened, so "Terlambat" and "mendekati deadline" stay meaningful in demos.
    ========================================================================= */
 
-const SEED_VERSION = 22;
+const SEED_VERSION = 23;
 
 const ROLE_LABEL = { admin: 'Admin / MRDK', satker: 'Satker Pelaksana', viewer: 'Pimpinan' };
 
@@ -230,7 +230,9 @@ function buildSeed() {
     [2, 'DPVL', 'Meningkatkan pengawasan perusahaan pembiayaan dengan rasio pembiayaan bermasalah (NPF) di atas ketentuan.', 25, 'Belum Diverifikasi', -4, 'Tinggi', -20, { tl: 'Identifikasi 9 perusahaan pembiayaan dengan NPF di atas 5%.', kd: 'Data restrukturisasi belum lengkap.' }],
     [8, 'DPPK', 'Menyusun kerangka pengaturan penyelenggaraan bursa mineral dan komoditas strategis.', 35, 'Disetujui', 85, 'Tinggi', -6, { prev: 15, tl: 'Kajian benchmarking bursa komoditas di 4 yurisdiksi.', vn: 'Disetujui.' }],
     [8, 'DPBK', 'Memetakan calon penyelenggara dan pelaku transaksi bursa mineral dan komoditas strategis.', 20, 'Belum Diverifikasi', 55, 'Sedang', -11, { tl: 'Inventarisasi calon penyelenggara dan anggota bursa.' }],
-    [8, 'DPPK', 'Berkoordinasi dengan kementerian terkait dalam penetapan komoditas strategis yang diperdagangkan di bursa.', 0, 'Belum Diverifikasi', 95, 'Sedang', null, {}]
+    [8, 'DPPK', 'Berkoordinasi dengan kementerian terkait dalam penetapan komoditas strategis yang diperdagangkan di bursa.', 0, 'Belum Diverifikasi', 95, 'Sedang', null, {}],
+    [2, 'DPPM', 'Menyusun penyesuaian ketentuan batas minimum saham free float bagi emiten dan perusahaan publik sesuai rekomendasi Komisi XI DPR RI.', 40, 'Disetujui', 120, 'Tinggi', -10, { prev: 20, tl: 'Konsultasi publik RPOJK free float telah dilaksanakan; pembahasan dengan SRO dan harmonisasi bersama Departemen Hukum.', out: 'RPOJK batas minimum free float', vn: 'Disetujui.' }],
+    [5, 'DPPM', 'Mengkinikan ketentuan penawaran umum efek bersifat ekuitas untuk mendorong pendalaman pasar modal.', 100, 'Disetujui', -20, 'Sedang', -25, { prev: 80, done: -25, tl: 'POJK pengkinian penawaran umum telah diundangkan setelah harmonisasi.', out: 'POJK penawaran umum (pengkinian)', vn: 'Disetujui. Bukti pengundangan dilampirkan.' }]
   ];
 
   const auditLogs = [];
@@ -447,6 +449,8 @@ function buildSeed() {
     });
   });
 
+  // Penugasan yang memerlukan penyesuaian/pengkinian ketentuan → data IRU Risiko Pengaturan
+  actionPlans.forEach(a => { if (REG_HINT.test(a.arahan)) { a.reg = { needed: true, owner: null, note: '', by: 'Ardhiansyah K', at: a.createdAt, src: 'LLM' }; log(a.createdAt, 'Ardhiansyah K', 'admin', 'Penandaan Penyesuaian Ketentuan', a.id, 'Tidak', 'Ya', 'Saran LLM saat ekstraksi, disimpan MRDK'); } });
   auditLogs.sort((a, b) => a.ts.localeCompare(b.ts));
 
   const notifications = [];

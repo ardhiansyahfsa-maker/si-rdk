@@ -69,3 +69,10 @@ Catatan prototipe: label "ADK Bidang X" dan nomor disposisi (DISP-…) bersifat 
 4. **Konfirmasi Risk & Quality Officer satker** – di SI-GRC → **Selesai**.
 
 SI-RDK **tidak menilai risiko**: kategori, nama risiko, dan level risiko ditetapkan SI-GRC dengan metodologinya sendiri dan ditampilkan apa adanya ("Level risiko (ditetapkan SI-GRC)"). Bila cakupan dikoreksi menjadi bukan OJK-wide, penugasan otomatis ditarik dan Admin SI-GRC diberi tahu. Tombol **Edit / Ubah status** (Admin MRDK) hanya menawarkan transisi yang sah sesuai tahap: tetapkan satker, tetapkan cakupan OJK-wide tanpa menunggu konfirmasi satker (wajib alasan, tercatat di audit trail), kirim/kirim pembaruan, ubah atribut cakupan, atau ubah catatan. Status tahap 3–4 berasal dari SI-GRC; untuk demo tersedia simulasi status balik.
+
+## Data IRU Risiko Pengaturan (SI-GRC)
+IRU di SI-GRC: *Concern yang perlu direspon dengan penyesuaian atau pengkinian ketentuan* (Desired 100% · Acceptable 100%), dinilai triwulanan.
+- Penugasan ditandai **memerlukan penyesuaian/pengkinian ketentuan** (saran LLM saat ekstraksi, ditetapkan MRDK di detail rencana aksi) — apa pun cakupannya.
+- **Pemilik risiko:** departemen pengaturan pada bidang terkait (otomatis, dapat diubah MRDK). **Departemen Hukum** tercatat sebagai satker terkait (harmonisasi dan penyelarasan).
+- **Realisasi** = peraturan selesai (progres 100% disetujui MRDK) ÷ concern, kumulatif tahun berjalan s.d. akhir triwulan. Panel di halaman Integrasi SI-GRC; Admin MRDK mengirim realisasi per triwulan. Status IRU ditetapkan SI-GRC.
+

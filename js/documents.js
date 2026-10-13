@@ -32,6 +32,8 @@ async function processDocument(doc, onStage, onLog) {
   if (isDprDoc(doc)) { const mt = dprMeta(doc); log(`[ocr] Identitas rapat: Rapat ke-${mt.rapatKe} · ${mt.jenisRapat} · TS ${mt.tahunSidang} · Masa Persidangan ${mt.masaSidang}`); log('[llm] Membaca bagian KESIMPULAN/KEPUTUSAN · 1 butir bukan permintaan tindak lanjut dilewati', true); applyDispositionToItems(doc, items, log); }
   if (isKrdkDoc(doc)) applyKrdkStructure(doc, items, log);
   else items.forEach((it, i) => log(isDprDoc(doc) ? `[sipena] #${i + 1} → ${it.satker ? satkerShort(it.satker) + ' (disposisi ' + it.dispNo + ')' : 'perlu dipetakan MRDK ke tujuan disposisi'}${it.mapAuto ? ' · pemetaan awal, perlu dicek MRDK' : ''}` : `[llm]  #${i + 1} → ${it.satker || 'satker belum teridentifikasi'} (${Math.round((it.conf.satker || .8) * 100)}%)`));
+  items.forEach(it => { it.regHint = REG_HINT.test(it.arahan); });
+  if (items.some(it => it.regHint)) log(`[llm] ${items.filter(it => it.regHint).length} poin disarankan memerlukan penyesuaian/pengkinian ketentuan (IRU ${IRU.risk})`);
   doc.ocr_status = 'Selesai'; doc.document_status = 'Selesai'; doc.extraction_status = 'Perlu Review';
   doc.topic = items[0]?.topic || doc.topic;
   doc.extraction = { runAt: new Date().toISOString(), model: 'SI-RDK Extractor v2 (simulasi)', items, ...(doc._krdkKeputusan ? { keputusan: doc._krdkKeputusan } : {}) }; delete doc._krdkKeputusan;
@@ -336,6 +338,7 @@ function exItemHTML(it, i, edit, doc) {
       ${ro('bidang', esc(it.bidang || '—'))}${ro('satker', (it.satker ? esc(it.satker) : `<span style="color:var(--warn-ink)">${isDprDoc(doc) ? 'Perlu dipetakan ke tujuan disposisi' : isKrdkDoc(doc) ? 'Penerima tingkat bidang — perlu dipetakan MRDK' : 'Belum teridentifikasi'}</span>`) + exDispNote(it, doc))}
       ${ro('respon', esc(it.respon || '—'))}${ro('completedDate', fmtDate(it.completedDate))}
       ${ro('tindakLanjut', esc(it.tindakLanjut || '—'))}
+      ${it.regHint ? `<div class="dl span-2"><dt>Saran LLM</dt><dd><span class="badge b-violet">Memerlukan penyesuaian/pengkinian ketentuan</span> <span class="small muted">· dihitung dalam IRU ${esc(IRU.risk)}; dapat diubah MRDK setelah disimpan</span></dd></div>` : ''}
       <div class="dl"><dt>Atensi (usulan)</dt><dd>${prioTag(it.priority)}</dd></div>
       <div class="dl"><dt>Target selesai (usulan)</dt><dd>${fmtDate(it.targetDate)}</dd></div>
     </dl>`;
@@ -468,6 +471,7 @@ Actions.exRegister = () => {
           updateDate: '', latestUpdate: '', createdAt: now, updatedAt: now, overdueNotified: false, extractedTindakLanjut: it.tindakLanjut
         });
         attachDisposition(appState.actionPlans.at(-1), doc, why);
+        if (it.regHint) { appState.actionPlans.at(-1).reg = { needed: true, owner: null, note: '', by: cu().name, at: now, src: 'LLM' }; audit('Penandaan Penyesuaian Ketentuan', id, 'Tidak', `Ya · pemilik ${regOwnerKey(appState.actionPlans.at(-1)) || '-'}`, 'Saran LLM saat ekstraksi, disimpan MRDK'); }
         ids.push(id); doc.saved_plan_ids.push(id);
         audit('Registrasi Rencana Aksi', id, '-', 'Register', `Hasil ekstraksi ${doc.document_id}`);
         if (it.satker) {

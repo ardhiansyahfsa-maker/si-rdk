@@ -383,6 +383,7 @@ registerPage('grc', {
           ${prof.map(p => `<tr class="clickable" tabindex="0" data-act="grcPickSatker" data-s="${esc(p.name)}"><td data-label="Satker"><b style="font-weight:600">${esc(p.name)}</b><div class="small muted">${esc(p.info?.bidang || '')}</div></td><td data-label="Masuk SI-GRC" class="tnum">${p.list.length}</td><td data-label="Tercatat" class="tnum">${p.rec}</td><td data-label="Dalam proses" class="tnum">${p.proc}</td><td data-label="Level (SI-GRC)">${Object.entries(p.lv).map(([l, n]) => `<div class="small nowrap"><b class="tnum">${n}</b> penugasan · level <b style="font-weight:600">${esc(l)}</b></div>`).join('') || '<span class="muted small">Belum ada yang tercatat</span>'}</td></tr>`).join('')}
         </tbody></table></div>` : '<div class="empty"><b>Belum ada data</b>Belum ada penugasan ber-cakupan OJK-wide dengan satker pengampu.</div>'}
       </section>
+      ${iruPanelHTML()}
       <section class="panel" id="grc-list"><div class="panel-head"><div><h3>Penugasan Cakupan OJK-wide</h3><div class="desc">Yang menunggu tindakan Anda ditampilkan paling atas</div></div></div>
         <div class="toolbar">
           <div class="grow">${icon('search')}<input class="input" placeholder="Cari ID, poin arahan, satker, kategori/risiko, ID SI-GRC…" value="${esc(f.q)}" data-input="grcSearch"></div>
