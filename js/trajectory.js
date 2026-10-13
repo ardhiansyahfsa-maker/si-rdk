@@ -5,7 +5,6 @@
    diturunkan otomatis dari atribut faktual:
      · Horizon  : Segera / Tahun Berjalan / Berkelanjutan
      · Cakupan  : OJK-wide / Lintas Satker / Satu Satker
-     · Penanda  : Diminta khusus oleh DK → selalu Atensi Khusus
    Alur: MRDK mencatat atribut → satker konfirmasi / ajukan penyesuaian →
    satker susun trajectory TW I–IV → MRDK setujui / kembalikan.
    ========================================================================= */
@@ -35,15 +34,14 @@ Object.assign(BADGE_CLASS, {
 ui.traj = { q: '', prep: '', track: '', quad: '', satker: '' };
 
 /* ------------------------------ Aturan ----------------------------------- */
-/** Kategori atensi dari atribut faktual. Penanda "diminta khusus oleh DK" selalu menghasilkan Atensi Khusus. */
-function quadrantOf(h, sc, dk) {
-  if (dk) return 'AK';
+/** Kategori atensi dari atribut faktual horizon × cakupan. */
+function quadrantOf(h, sc) {
   if (!h || !sc) return null;
   const t = H_SCORE[h] + S_SCORE[sc];
   return t >= 6 ? 'AK' : t === 5 ? 'AT' : 'PR';
 }
-const quadOf = ap => ap.cls ? quadrantOf(ap.cls.horizon, ap.cls.scope, ap.cls.dk) : null;
-const clsFacts = c => c ? `${esc(c.horizon)} · ${esc(c.scope)}${c.dk ? ' · <b>diminta khusus DK</b>' : ''}` : '—';
+const quadOf = ap => ap.cls ? quadrantOf(ap.cls.horizon, ap.cls.scope) : null;
+const clsFacts = c => c ? `${esc(c.horizon)} · ${esc(c.scope)}` : '—';
 const quadBadge = q => q ? `<span class="badge ${QUADRANTS[q].cls}">${QUADRANTS[q].label}</span>` : '<span class="muted small">Belum ditetapkan</span>';
 
 function prepStatus(ap) {
@@ -109,21 +107,18 @@ Actions.clsSet = el => {
       <div class="form-grid">
         <div class="field"><label>Horizon penyelesaian</label>${optRadios('cs-h', HORIZONS, h0 || 'Tahun Berjalan', HORIZON_HINT)}</div>
         <div class="field"><label>Cakupan dampak</label>${optRadios('cs-s', SCOPES, s0 || 'Satu Satker', SCOPE_HINT)}</div>
-        <label class="check span-2" style="align-items:flex-start"><input type="checkbox" id="cs-dk" ${c.dk ? 'checked' : ''}><span><b>Diminta khusus oleh Dewan Komisioner</b><br><span class="small muted">Centang bila risalah/arahan DK secara eksplisit meminta penugasan ini dipantau atau dilaporkan khusus — otomatis menjadi Atensi Khusus.</span></span></label>
-        <div class="field span-2" id="cs-dkref-w" ${c.dk ? '' : 'hidden'}><label for="cs-dkref">Rujukan permintaan DK <span class="req">*</span></label><input class="input" id="cs-dkref" value="${esc(c.dkRef || '')}" placeholder="Mis. Risalah RDK No. 29/RDK/2026 butir 3"></div>
         <div class="field span-2"><label>Kategori atensi (otomatis)</label><div id="cs-q"></div></div>
         <div class="field span-2"><label for="cs-note">Catatan MRDK <span class="small muted">(opsional)</span></label><textarea class="textarea" id="cs-note" style="min-height:56px">${esc(adj ? '' : c.note || '')}</textarea></div>
       </div>`,
-    onMount: m => { const upd = () => { const h = $('input[name="cs-h"]:checked', m).value, sc = $('input[name="cs-s"]:checked', m).value, dk = $('#cs-dk', m).checked; $('#cs-dkref-w', m).hidden = !dk; $('#cs-q', m).innerHTML = quadBadge(quadrantOf(h, sc, dk)); }; m.addEventListener('change', upd); upd(); },
+    onMount: m => { const upd = () => { const h = $('input[name="cs-h"]:checked', m).value, sc = $('input[name="cs-s"]:checked', m).value; $('#cs-q', m).innerHTML = quadBadge(quadrantOf(h, sc)); }; m.addEventListener('change', upd); upd(); },
     foot: [{ label: 'Batal', cls: 'ghost' }, { label: adj ? 'Tetapkan Final' : (ap.satker ? 'Simpan & Minta Konfirmasi' : 'Simpan'), cls: 'primary', icon: 'save', onClick: m => {
-      const horizon = $('input[name="cs-h"]:checked', m.el).value, scope = $('input[name="cs-s"]:checked', m.el).value, dk = $('#cs-dk', m.el).checked, dkRef = $('#cs-dkref', m.el).value.trim(), note = $('#cs-note', m.el).value.trim();
-      if (dk && !dkRef) { $('#cs-dkref', m.el).classList.add('invalid'); return toast('⚠ Rujukan permintaan DK wajib diisi.', 'error'); }
-      const q = quadrantOf(horizon, scope, dk); const prevQ = quadOf(ap); const now = new Date().toISOString();
-      if (!adj && c.horizon === horizon && c.scope === scope && !!c.dk === dk && (c.dkRef || '') === (dk ? dkRef : '') && (c.note || '') === note) { m.close(); return toast('Tidak ada perubahan.', 'info'); }
-      ap.cls = { ...c, horizon, scope, dk, dkRef: dk ? dkRef : '', note, by: cu().name, at: now, status: adj ? 'confirmed' : 'proposed', satker: adj ? ap.satker : null, proposal: adj ? { ...c.proposal, decidedBy: cu().name, decidedAt: now } : null };
+      const horizon = $('input[name="cs-h"]:checked', m.el).value, scope = $('input[name="cs-s"]:checked', m.el).value, note = $('#cs-note', m.el).value.trim();
+      const q = quadrantOf(horizon, scope); const prevQ = quadOf(ap); const now = new Date().toISOString();
+      if (!adj && c.horizon === horizon && c.scope === scope && (c.note || '') === note) { m.close(); return toast('Tidak ada perubahan.', 'info'); }
+      ap.cls = { ...c, horizon, scope, note, by: cu().name, at: now, status: adj ? 'confirmed' : 'proposed', satker: adj ? ap.satker : null, proposal: adj ? { ...c.proposal, decidedBy: cu().name, decidedAt: now } : null };
       if (!adj) { ap.cls.confirmedBy = null; ap.cls.confirmedAt = null; }
       ap.priority = QUADRANTS[q].prio;
-      audit('Penetapan Atensi', ap.id, prevQ ? QUADRANTS[prevQ].label : '-', `${QUADRANTS[q].label} (${horizon} · ${scope}${dk ? ' · diminta khusus DK' : ''})`, adj ? `Final setelah usulan penyesuaian satker${note ? ' · ' + note : ''}` : [dk ? 'Rujukan DK: ' + dkRef : '', note].filter(Boolean).join(' · '));
+      audit('Penetapan Atensi', ap.id, prevQ ? QUADRANTS[prevQ].label : '-', `${QUADRANTS[q].label} (${horizon} · ${scope}})`, adj ? `Final setelah usulan penyesuaian satker${note ? ' · ' + note : ''}` : note);
       if (ap.satker) notify(['satker:' + ap.satker], adj ? `MRDK menetapkan final kategori atensi ${ap.id}: ${QUADRANTS[q].label}. Silakan susun trajectory.` : `Mohon konfirmasi atribut atensi ${ap.id}: ${horizon} · ${scope} → ${QUADRANTS[q].label}.`, 'warn', { type: 'plan', id: ap.id });
       m.close(); toast(adj ? 'Kategori atensi final ditetapkan. Satker dapat menyusun trajectory.' : 'Kategori atensi tersimpan. Menunggu konfirmasi satker.'); commit();
     } }]
@@ -136,7 +131,7 @@ Actions.clsConfirm = el => {
   const c = ap.cls; const q = quadOf(ap);
   openModal({
     title: 'Konfirmasi Atribut Atensi', sub: `<span class="mono">${ap.id}</span> · ${esc(ap.arahan.slice(0, 80))}${ap.arahan.length > 80 ? '…' : ''}`,
-    body: `<dl class="kv" style="margin-bottom:14px"><dt>Kategori atensi</dt><dd>${quadBadge(q)}</dd><dt>Horizon</dt><dd><b>${esc(c.horizon)}</b> <span class="small muted">· ${HORIZON_HINT[c.horizon]}</span></dd><dt>Cakupan</dt><dd><b>${esc(c.scope)}</b> <span class="small muted">· ${SCOPE_HINT[c.scope]}</span></dd>${c.dk ? `<dt>Permintaan DK</dt><dd>Diminta khusus oleh DK · ${esc(c.dkRef)}</dd>` : ''}${c.note ? `<dt>Catatan MRDK</dt><dd>${esc(c.note)}</dd>` : ''}</dl>
+    body: `<dl class="kv" style="margin-bottom:14px"><dt>Kategori atensi</dt><dd>${quadBadge(q)}</dd><dt>Horizon</dt><dd><b>${esc(c.horizon)}</b> <span class="small muted">· ${HORIZON_HINT[c.horizon]}</span></dd><dt>Cakupan</dt><dd><b>${esc(c.scope)}</b> <span class="small muted">· ${SCOPE_HINT[c.scope]}</span></dd>${c.note ? `<dt>Catatan MRDK</dt><dd>${esc(c.note)}</dd>` : ''}</dl>
       <div class="small muted" style="margin-bottom:10px">${ATENSI_NOTE}</div>
       <div class="field"><label>Tanggapan Satker</label>
         <label class="check"><input type="radio" name="cc-dec" value="ok" checked>Konfirmasi — atribut sesuai, lanjut menyusun trajectory</label>
@@ -274,7 +269,6 @@ function trajDrawerSection(ap) {
     <dl class="kv">
       ${kv('Kategori atensi', quadBadge(q))}
       ${c ? kv('Atribut', `${clsFacts(c)} <span class="small muted">· dicatat ${esc(c.by)}</span>`) : ''}
-      ${c?.dk ? kv('Rujukan DK', esc(c.dkRef || '-')) : ''}
       ${c?.note ? kv('Catatan MRDK', esc(c.note)) : ''}
       ${c?.proposal && ps === 'Penyesuaian Diajukan' ? kv('Usulan satker', `${esc(c.proposal.horizon)} · ${esc(c.proposal.scope)} — ${esc(c.proposal.note)}`) : ''}
       ${kv('Tahap', badge(ps) + (c?.confirmedBy && c.satker === ap.satker ? ` <span class="small muted">· dikonfirmasi ${esc(c.confirmedBy)}</span>` : ''))}
@@ -317,13 +311,12 @@ function trajTableRowsHTML() {
 function matrixHTML(plans, act = 'trajQuad') {
   const f = ui.traj;
   const bg = { AK: 'var(--danger-50)', AT: 'var(--warn-50)', PR: 'var(--blue-50)' };
-  const cell = (h, sc) => { const q = quadrantOf(h, sc); const n = plans.filter(a => a.cls && !a.cls.dk && a.cls.horizon === h && a.cls.scope === sc).length;
+  const cell = (h, sc) => { const q = quadrantOf(h, sc); const n = plans.filter(a => a.cls && a.cls.horizon === h && a.cls.scope === sc).length;
     return `<button data-act="${act}" data-q="${q}" data-f="quad:${q}" title="${QUADRANTS[q].label}" style="border:1px solid ${act === 'trajQuad' && f.quad === q ? 'var(--blue)' : 'var(--line)'};background:${bg[q]};border-radius:8px;padding:8px 4px;text-align:center;cursor:pointer;min-height:56px"><div style="font-size:20px;font-weight:700;color:var(--navy)" class="tnum">${n}</div><div class="small muted" style="font-size:10.5px">${QUADRANTS[q].label}</div></button>`; };
-  const dkN = plans.filter(a => a.cls?.dk).length;
   return `<div style="display:grid;grid-template-columns:auto repeat(3,1fr);gap:6px;align-items:stretch">
     <div></div>${HORIZONS.map(h => `<div class="small muted" style="text-align:center;font-weight:600">${h}</div>`).join('')}
     ${SCOPES.map(sc => `<div class="small muted" style="font-weight:600;display:flex;align-items:center;padding-right:6px">${sc}</div>${HORIZONS.map(h => cell(h, sc)).join('')}`).join('')}
-  </div><div class="small muted" style="margin-top:8px">Kolom = horizon penyelesaian · baris = cakupan dampak. <b>${dkN}</b> penugasan diminta khusus oleh DK (otomatis Atensi Khusus, tidak masuk matriks) · ${plans.filter(a => !a.cls).length} belum dicatat.</div>`;
+  </div><div class="small muted" style="margin-top:8px">Kolom = horizon penyelesaian · baris = cakupan dampak · ${plans.filter(a => !a.cls).length} belum dicatat.</div>`;
 }
 Actions.trajQuad = el => { ui.traj.quad = ui.traj.quad === el.dataset.q ? '' : el.dataset.q; renderPage(true); };
 Actions.trajFilter = () => { const f = ui.traj; f.prep = $('#tf-prep').value; f.track = $('#tf-track').value; const s = $('#tf-satker'); f.satker = s ? s.value : ''; $('#traj-table').innerHTML = trajTableRowsHTML(); };
@@ -382,7 +375,7 @@ Exporters.trajectory = () => ({
   name: 'Atensi_dan_Trajectory', sheet: 'Trajectory', title: 'Atensi Pemantauan & Trajectory Penugasan', subtitle: `${trajRows().length} penugasan`, rows: trajRows(),
   columns: [
     { label: 'ID', get: a => a.id, w: 13 }, { label: 'Poin Arahan', get: a => a.arahan, w: 70 }, { label: 'Satker', get: a => a.satker, w: 40 },
-    { label: 'Horizon', get: a => a.cls?.horizon || '', w: 13 }, { label: 'Cakupan', get: a => a.cls?.scope || '', w: 13 }, { label: 'Diminta Khusus DK', get: a => a.cls?.dk ? 'Ya' : '', w: 10 }, { label: 'Kategori Atensi', get: a => quadOf(a) ? QUADRANTS[quadOf(a)].label : '', w: 18 },
+    { label: 'Horizon', get: a => a.cls?.horizon || '', w: 13 }, { label: 'Cakupan', get: a => a.cls?.scope || '', w: 13 }, { label: 'Kategori Atensi', get: a => quadOf(a) ? QUADRANTS[quadOf(a)].label : '', w: 18 },
     { label: 'Tahap', get: a => prepStatus(a), w: 30 }, { label: 'Tahun', get: a => a.traj?.year || '', w: 8 },
     ...TW.map((t, i) => ({ label: `Target ${t}`, get: a => a.traj && a.traj.satker === a.satker ? a.traj.items[i].target : '', w: 10 })),
     ...TW.map((t, i) => ({ label: `Keluaran ${t}`, get: a => a.traj && a.traj.satker === a.satker ? a.traj.items[i].output : '', w: 36 })),

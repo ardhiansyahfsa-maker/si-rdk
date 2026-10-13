@@ -5,7 +5,7 @@
    opened, so "Terlambat" and "mendekati deadline" stay meaningful in demos.
    ========================================================================= */
 
-const SEED_VERSION = 17;
+const SEED_VERSION = 18;
 
 const ROLE_LABEL = { admin: 'Admin / MRDK', satker: 'Satker Pelaksana', viewer: 'Pimpinan' };
 
@@ -346,7 +346,7 @@ function buildSeed() {
   grcLog.sort((a, b) => a.at.localeCompare(b.at)).forEach(l => { l.id = 'SYNC-' + String(++syncSeq).padStart(4, '0'); });
   grcLog.reverse();
 
-  // Kategori atensi (atribut faktual horizon × cakupan; penanda permintaan khusus DK) & trajectory TW I–IV
+  // Kategori atensi (atribut faktual horizon × cakupan) & trajectory TW I–IV
   const after = (iso, days, h = 10) => { const d = new Date(iso); d.setDate(d.getDate() + days); d.setHours(h, 10 + days % 40, 0, 0); return new Date(Math.min(d.getTime(), nowMs - 120000)).toISOString(); };
   const STATE = { 23: 'none', 20: 'none', 10: 'proposed', 16: 'proposed', 22: 'proposed', 15: 'adjust', 24: 'confirmed', 18: 'confirmed', 5: 'returned', 2: 'submitted', 8: 'submitted' };
   const OUT = [['Kajian awal dan rencana kerja'], ['Kajian awal dan rencana kerja', 'Penyelesaian dan pelaporan hasil'], ['Kajian dan pemetaan permasalahan', 'Penyusunan konsep / rancangan', 'Penyelesaian dan pelaporan hasil'], ['Kajian dan pemetaan permasalahan', 'Penyusunan konsep / rancangan', 'Pelaksanaan dan koordinasi pemangku kepentingan', 'Penyelesaian dan pelaporan hasil']];
@@ -361,12 +361,10 @@ function buildSeed() {
     const dTo = diffDays(ap.targetDate, ap.rdkDate);  // jangka waktu yang diberikan sejak arahan
     const horizon = dTo <= 90 ? 'Segera' : ap.targetDate <= `${ap.rdkDate.slice(0, 4)}-12-31` ? 'Tahun Berjalan' : 'Berkelanjutan';
     const scope = ap.strategic ? 'OJK-wide' : (P[i][6] === 'Tinggi' || i % 3 === 0) ? 'Lintas Satker' : 'Satu Satker';
-    const DKREQ = { 7: 'Risalah RDK No. 29/RDK/2026 — DK meminta laporan khusus pengawasan bursa kripto', 0: 'Risalah RDK No. 31/RDK/2026 — DK meminta pemantauan khusus' };
-    const dk = !!DKREQ[i];
-    const q = quadrantOf(horizon, scope, dk); ap.priority = QUADRANTS[q].prio;
+    const q = quadrantOf(horizon, scope); ap.priority = QUADRANTS[q].prio;
     const at = after(ap.createdAt, 1, 9);
-    ap.cls = { horizon, scope, dk, dkRef: DKREQ[i] || '', note: '', by: MR, at, status: 'proposed', satker: null, proposal: null };
-    log(at, MR, 'admin', 'Penetapan Atensi', ap.id, '-', `${QUADRANTS[q].label} (${horizon} · ${scope}${dk ? ' · diminta khusus DK' : ''})`, dk ? 'Rujukan DK: ' + DKREQ[i] : '');
+    ap.cls = { horizon, scope, note: '', by: MR, at, status: 'proposed', satker: null, proposal: null };
+    log(at, MR, 'admin', 'Penetapan Atensi', ap.id, '-', `${QUADRANTS[q].label} (${horizon} · ${scope})`, '');
     if (st === 'proposed' || !ap.satker) return;
     if (st === 'adjust') {
       ap.cls.status = 'adjust'; ap.cls.satker = ap.satker;

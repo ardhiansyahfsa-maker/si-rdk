@@ -40,9 +40,8 @@ rapat dengan Komisi XI; (4) statistik kategori atensi serta daftar Atensi Khusus
 Menu **Monitoring → Atensi & Trajectory**. *Seluruh arahan DK wajib ditindaklanjuti; kategori atensi menunjukkan
 intensitas pemantauan oleh MRDK, bukan tingkat kepentingan arahan.*
 1. **Admin MRDK** mencatat atribut faktual: **horizon** (Segera ≤ 3 bulan sejak arahan / Tahun Berjalan / Berkelanjutan)
-   dan **cakupan** (OJK-wide / Lintas Satker / Satu Satker), serta penanda **"diminta khusus oleh DK"** beserta rujukannya.
-   Kategori diturunkan otomatis: **Atensi Khusus**, **Atensi Tinggi**, **Pemantauan Reguler**
-   (permintaan khusus DK selalu Atensi Khusus).
+   dan **cakupan** (OJK-wide / Lintas Satker / Satu Satker).
+   Kategori diturunkan otomatis: **Atensi Khusus**, **Atensi Tinggi**, **Pemantauan Reguler**.
 2. **Satker** mengonfirmasi atau mengajukan koreksi atribut (MRDK menetapkan final).
 3. Satker menyusun **trajectory 4 triwulan** (TW I–IV tahun takwim), lalu **Admin MRDK** menyetujui atau mengembalikan.
 

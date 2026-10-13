@@ -147,11 +147,11 @@ async function exportBriefPDF() {
   });
 
   /* ---------- 4. atensi ---------- */
-  section(4, 'Kategori Atensi Pemantauan', ATENSI_NOTE + ' Kategori diturunkan dari atribut faktual (horizon penyelesaian dan cakupan dampak) yang dicatat MRDK dan dikonfirmasi satker; penugasan yang diminta khusus oleh DK otomatis masuk Atensi Khusus.');
+  section(4, 'Kategori Atensi Pemantauan', ATENSI_NOTE + ' Kategori diturunkan dari atribut faktual (horizon penyelesaian dan cakupan dampak) yang dicatat MRDK dan dikonfirmasi satker.');
   table(['Kategori atensi', 'Total', 'Dalam Proses', 'Selesai', 'Terlambat', 'Tertinggal'], [...quads.map(q => { const l = byQ(q); return [QUADRANTS[q].label, l.length, l.filter(a => dkStatus(a) === 'Dalam Proses').length, l.filter(a => dkStatus(a) === 'Selesai').length, l.filter(isLate).length, l.filter(a => trackStatus(a)?.st === 'Tertinggal').length]; }), ...(unclassified ? [['Belum dicatat', unclassified, '', '', '', '']] : [])],
     ['*', 16, 24, 18, 20, 20], { right: [1, 2, 3, 4, 5] });
   const prioRows = list => list.slice().sort((a, b) => (dkStatus(a) === 'Selesai') - (dkStatus(b) === 'Selesai') || isLate(b) - isLate(a) || a.targetDate.localeCompare(b.targetDate))
-    .map(a => { const t = trackStatus(a); return [a.id, a.arahan, sat(a), a.cls.dk ? `Diminta khusus DK (${a.cls.horizon} · ${a.cls.scope})` : `${a.cls.horizon} · ${a.cls.scope}`, dkStatus(a), `${a.progress}%`, fmtDate(a.targetDate), [isLate(a) ? `Terlambat ${-daysToTarget(a)} hari` : '', t?.st === 'Tertinggal' ? `Tertinggal ${t.gap} poin` : ''].filter(Boolean).join('; ') || '-']; });
+    .map(a => { const t = trackStatus(a); return [a.id, a.arahan, sat(a), `${a.cls.horizon} · ${a.cls.scope}`, dkStatus(a), `${a.progress}%`, fmtDate(a.targetDate), [isLate(a) ? `Terlambat ${-daysToTarget(a)} hari` : '', t?.st === 'Tertinggal' ? `Tertinggal ${t.gap} poin` : ''].filter(Boolean).join('; ') || '-']; });
   const pcols = ['ID', 'Arahan / Penugasan', 'Satker', 'Atribut (horizon · cakupan)', 'Status', 'Progres', 'Target', 'Catatan'], pcw = [19, '*', 15, 32, 19, 13, 19, 22];
   sub(`4.a Atensi Khusus (${p1.length})`, C.red); table(pcols, prioRows(p1), pcw, { empty: 'Tidak ada penugasan dengan Atensi Khusus.', headColor: C.red, right: [5] });
   sub(`4.b Atensi Tinggi (${p2.length})`, C.amber); table(pcols, prioRows(p2), pcw, { empty: 'Tidak ada penugasan dengan Atensi Tinggi.', headColor: C.amber, right: [5] });
