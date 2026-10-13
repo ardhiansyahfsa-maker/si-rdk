@@ -132,11 +132,11 @@ Exporters.rekap = () => {
     columns: [{ label: 'Level', get: r => r.lvl, w: 8 }, { label: 'Kode', get: r => r.code, w: 8 }, { label: 'Bidang / Satuan Kerja', get: r => (r.lvl === 'Satker' ? '   ' : '') + r.name, w: 60 }, ...kc],
     extraSheets: [
       { sheet: 'Rekap Bidang', rows: [...d.groups.map(g => ({ code: g.code, name: g.name, k: g.k })), { code: 'OJK', name: 'TOTAL OJK', k: d.total }], columns: [{ label: 'Kode', get: r => r.code, w: 8 }, { label: 'Bidang', get: r => r.name, w: 60 }, ...kc] },
-      { sheet: 'Rincian Penugasan', rows: d.items, columns: [
-        { label: 'ID', get: x => x.ap.id, w: 13 }, { label: 'Bidang', get: x => bidangCode(x.ap.bidang), w: 8 }, { label: 'Satker', get: x => x.ap.satker, w: 40 }, { label: 'Poin Arahan', get: x => x.ap.arahan, w: 70 },
+      { sheet: 'Rincian per Bidang', rows: (() => { const bi = n => { const i = bidangList().findIndex(b => b.name === n); return i < 0 ? 99 : i; }; return d.items.slice().sort((a, b) => bi(a.ap.bidang) - bi(b.ap.bidang) || String(a.ap.satker || 'zzz').localeCompare(String(b.ap.satker || 'zzz')) || a.ap.id.localeCompare(b.ap.id)); })(), columns: [
+        { label: 'Kode Bidang', get: x => bidangCode(x.ap.bidang) || '-', w: 11 }, { label: 'Bidang', get: x => x.ap.bidang || 'Belum ditetapkan', w: 45 }, { label: 'Kode Satker', get: x => satkerInfo(x.ap.satker)?.key || '-', w: 11 }, { label: 'Satker', get: x => x.ap.satker || 'Belum ditugaskan', w: 45 }, { label: 'ID', get: x => x.ap.id, w: 13 }, { label: 'Poin Arahan', get: x => x.ap.arahan, w: 70 },
         { label: 'Tanggal RDK', get: x => x.ap.rdkDate, w: 12 }, { label: 'Target Selesai', get: x => x.ap.targetDate, w: 13 },
         { label: 'Progres Terverifikasi (%)', get: x => x.ver, w: 14 }, { label: 'Progres Dilaporkan (%)', get: x => x.rep, w: 14 }, { label: 'Status (per posisi)', get: x => x.st, w: 16 }, { label: 'Label Terlambat', get: x => x.late ? 'Ya' : '', w: 12 },
-        { label: 'Menunggu Verifikasi', get: x => x.pend ? 'Ya' : '', w: 12 }, { label: 'Kuadran', get: x => quadOf(x.ap) || '', w: 9 }, { label: 'Tertinggal Trajectory', get: x => x.behind ? 'Ya' : '', w: 12 },
+        { label: 'Status Verifikasi', get: x => x.ap.verificationStatus, w: 18 }, { label: 'Menunggu Verifikasi', get: x => x.pend ? 'Ya' : '', w: 12 }, { label: 'Kuadran', get: x => quadOf(x.ap) || '', w: 9 }, { label: 'Tertinggal Trajectory', get: x => x.behind ? 'Ya' : '', w: 12 },
         { label: 'Strategis (SI-GRC)', get: x => x.strat ? 'Ya' : '', w: 12 }
       ] }
     ]
