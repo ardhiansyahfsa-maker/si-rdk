@@ -2,8 +2,9 @@
    SI-RDK · sipena.js — Integrasi SIPENA (disposisi ADK)
    Berlaku KHUSUS untuk Laporan Singkat Raker/RDP dengan DPR (sumber Komisi XI).
    · Laporan singkat beserta disposisi ADK ditarik otomatis dari SIPENA.
-   · Satker penanggung jawab ditetapkan dari tujuan disposisi ADK — bukan dari
-     usulan LLM. LLM hanya memecah laporan singkat menjadi poin-poin arahan.
+   · Laporan singkat = sumber APA yang ditindaklanjuti (poin Kesimpulan/Keputusan).
+   · Disposisi ADK di SIPENA = sumber SIAPA yang menyelesaikan (satker).
+     LLM hanya memecah laporan singkat menjadi poin; tidak menetapkan satker.
    · Penugasan ke satker di luar tujuan disposisi ditandai dan wajib beralasan.
    Prototipe: penarikan disimulasikan (api.pullSipena); kontrak data mengikuti
    SIPENA_CONTRACT sehingga dapat diganti panggilan API SIPENA sebenarnya.
@@ -67,17 +68,18 @@ Actions.sipenaPull = async () => {
 /** Dipanggil setelah strukturisasi LLM: satker mengikuti tujuan disposisi ADK. */
 function applyDispositionToItems(doc, items, log = () => { }) {
   if (!isDprDoc(doc)) return;
-  if (!doc.sipena) { log('[sipena] Disposisi ADK belum tersedia — satker belum dapat ditetapkan'); items.forEach(it => { it.llmSatker = it.satker; it.satker = ''; it.bidang = it.bidang || ''; it.assignmentStatus = 'Belum Ditugaskan'; }); return; }
+  if (!doc.sipena) { log('[sipena] Disposisi ADK belum tersedia — satker belum dapat ditetapkan'); items.forEach(it => { it.mapAuto = false; it.satker = ''; it.bidang = it.bidang || ''; it.assignmentStatus = 'Belum Ditugaskan'; }); return; }
   const targets = dispTargets(doc);
   items.forEach(it => {
-    it.llmSatker = it.satker;
-    let s = targets.includes(it.satker) ? it.satker : null;
-    if (!s) { const sameB = targets.find(t => satkerInfo(t)?.bidang === it.bidang); s = sameB || (targets.length === 1 ? targets[0] : null); }
+    // Laporan singkat tidak menyebut satker: hanya topik/bidang poin yang dipakai sebagai petunjuk pemetaan awal
+    const hint = it.satker; delete it.llmSatker;
+    let s = targets.length === 1 ? targets[0] : null; it.mapAuto = false;
+    if (!s && targets.length > 1) { s = targets.includes(hint) ? hint : (targets.find(t => satkerInfo(t)?.bidang === it.bidang) || null); it.mapAuto = !!s; }
     it.satker = s || ''; it.bidang = s ? satkerInfo(s).bidang : it.bidang; it.assignmentStatus = s ? 'Sudah Ditugaskan' : 'Belum Ditugaskan';
     it.dispNo = s ? dispFor(doc, s).no : '';
     if (it.conf) it.conf.satker = s ? 1 : it.conf.satker;
   });
-  log(`[sipena] Satker ditetapkan dari ${dispList(doc).length} disposisi ADK (${doc.sipena.agenda}) · usulan LLM hanya sebagai pembanding`, true);
+  log(`[sipena] Penanggung jawab ditetapkan dari ${dispList(doc).length} disposisi ADK (${doc.sipena.agenda}) — bukan dari laporan singkat`, true);
 }
 /** Lampirkan rujukan disposisi ke penugasan baru dari dokumen DPR. */
 function attachDisposition(ap, doc, note) {

@@ -738,3 +738,5 @@ table.rt { width: 100%; border-collapse: collapse; font-size: 12.8px; }
 .paper table.dpr-meta td:first-child { white-space: nowrap; padding-right: 18px; }
 .paper .dpr-sec { font-weight: 700; margin: 14px 0 6px; }
 .paper li.skip { color: #666; }
+.src-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; font-size: 10px; font-weight: 600; letter-spacing: .02em; text-transform: none; background: var(--primary-50, #EAF2FA); color: var(--primary-700, #1F5A8F); vertical-align: middle; }
+.src-tag.sp { background: var(--green-50); color: var(--green-700); }

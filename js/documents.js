@@ -27,10 +27,10 @@ async function processDocument(doc, onStage, onLog) {
   log(`[text] Normalisasi teks, ${tx.paragraphs} paragraf, deteksi struktur ${isDprDoc(doc) ? '"KESIMPULAN/KEPUTUSAN"' : '"Pokok-pokok Arahan"'}`, true);
   log('[llm] Skema keluaran: arahan_rdk.v2 (9 field + usulan atensi + usulan target)');
   let said = false;
-  const items = await api.structureWithLLM(doc, p => { onStage(3, p); if (p > .55 && !said) { said = true; log('[llm] Memetakan bidang dan satker penanggung jawab ke master data'); } });
+  const items = await api.structureWithLLM(doc, p => { onStage(3, p); if (p > .55 && !said) { said = true; log(isDprDoc(doc) ? '[llm] Memecah butir Kesimpulan/Keputusan menjadi poin tindak lanjut (satker tidak dibaca dari laporan singkat)' : '[llm] Memetakan bidang dan satker penanggung jawab ke master data'); } });
   log(`[llm] ${items.length} poin arahan teridentifikasi`, true);
   if (isDprDoc(doc)) { const mt = dprMeta(doc); log(`[ocr] Identitas rapat: Rapat ke-${mt.rapatKe} · ${mt.jenisRapat} · TS ${mt.tahunSidang} · Masa Persidangan ${mt.masaSidang}`); log('[llm] Membaca bagian KESIMPULAN/KEPUTUSAN · 1 butir bukan permintaan tindak lanjut dilewati', true); applyDispositionToItems(doc, items, log); }
-  items.forEach((it, i) => log(isDprDoc(doc) ? `[sipena] #${i + 1} → ${it.satker ? satkerShort(it.satker) + ' (disposisi ' + it.dispNo + ')' : 'perlu dipetakan MRDK ke tujuan disposisi'}${it.llmSatker && it.llmSatker !== it.satker ? ' · usulan LLM: ' + satkerShort(it.llmSatker) : ''}` : `[llm]  #${i + 1} → ${it.satker || 'satker belum teridentifikasi'} (${Math.round((it.conf.satker || .8) * 100)}%)`));
+  items.forEach((it, i) => log(isDprDoc(doc) ? `[sipena] #${i + 1} → ${it.satker ? satkerShort(it.satker) + ' (disposisi ' + it.dispNo + ')' : 'perlu dipetakan MRDK ke tujuan disposisi'}${it.mapAuto ? ' · pemetaan awal, perlu dicek MRDK' : ''}` : `[llm]  #${i + 1} → ${it.satker || 'satker belum teridentifikasi'} (${Math.round((it.conf.satker || .8) * 100)}%)`));
   doc.ocr_status = 'Selesai'; doc.document_status = 'Selesai'; doc.extraction_status = 'Perlu Review';
   doc.topic = items[0]?.topic || doc.topic;
   doc.extraction = { runAt: new Date().toISOString(), model: 'SI-RDK Extractor v2 (simulasi)', items };
@@ -301,14 +301,16 @@ function confTag(v) { if (v == null) return ''; const p = Math.round(v * 100); r
 function exDispNote(it, doc) {
   if (!isDprDoc(doc) || !doc.sipena) return '';
   const x = it.satker ? dispFor(doc, it.satker) : null;
-  const llm = it.llmSatker && it.llmSatker !== it.satker ? `<div class="small muted">Usulan LLM: ${esc(satkerShort(it.llmSatker))} — diabaikan, mengikuti disposisi</div>` : '';
+  const llm = it.mapAuto ? `<div class="small" style="color:var(--warn-ink)">Disposisi ditujukan ke ${dispTargets(doc).length} satker — pemetaan awal, mohon dicek MRDK</div>` : '';
   if (!it.satker) return `<div class="small muted">Tujuan disposisi: ${dispTargets(doc).map(satkerShort).join(', ')}</div>${llm}`;
-  return (x ? `<div style="margin-top:3px"><span class="badge b-teal">Disposisi ${esc(x.from)}</span> <span class="small mono muted">${esc(x.no)}</span></div>` : `<div style="margin-top:3px"><span class="badge b-red">Di luar disposisi ADK</span></div>`) + llm;
+  return (x ? `<div style="margin-top:3px"><span class="badge b-teal">${esc(x.from)}</span> <span class="small mono muted">${esc(x.no)}</span></div>` : `<div style="margin-top:3px"><span class="badge b-red">Di luar disposisi ADK</span></div>`) + llm;
 }
 function exItemHTML(it, i, edit, doc) {
   const sats = appState.masters.satker; const bidangs = bidangList().map(b => b.name);
-  const ro = (k, v) => `<div class="dl ${k === 'arahan' || k === 'tindakLanjut' || k === 'topic' ? 'span-2' : ''}"><dt>${EX_FIELDS.find(f => f[0] === k)[1]} ${confTag(it.conf?.[k])}</dt><dd>${v}</dd></div>`;
-  const inp = (k, html) => `<div class="field ${k === 'arahan' || k === 'tindakLanjut' || k === 'topic' ? 'span-2' : ''}"><label for="ex-${i}-${k}">${EX_FIELDS.find(f => f[0] === k)[1]}</label>${html}</div>`;
+  const dpr = isDprDoc(doc);
+  const srcTag = k => !dpr ? '' : k === 'arahan' ? ' <span class="src-tag">Sumber: Laporan Singkat</span>' : (k === 'satker' || k === 'bidang') ? ' <span class="src-tag sp">Sumber: Disposisi SIPENA</span>' : '';
+  const ro = (k, v) => `<div class="dl ${k === 'arahan' || k === 'tindakLanjut' || k === 'topic' ? 'span-2' : ''}"><dt>${EX_FIELDS.find(f => f[0] === k)[1]} ${dpr && (k === 'satker' || k === 'bidang') ? '' : confTag(it.conf?.[k])}${srcTag(k)}</dt><dd>${v}</dd></div>`;
+  const inp = (k, html) => `<div class="field ${k === 'arahan' || k === 'tindakLanjut' || k === 'topic' ? 'span-2' : ''}"><label for="ex-${i}-${k}">${EX_FIELDS.find(f => f[0] === k)[1]}${srcTag(k)}</label>${html}</div>`;
   const body = edit ? `<div class="form-grid">
       ${inp('rdkDate', `<input class="input" type="date" id="ex-${i}-rdkDate" value="${esc(it.rdkDate)}">`)}
       ${inp('assignmentStatus', `<input class="input" id="ex-${i}-assignmentStatus" value="${esc(it.satker ? 'Sudah Ditugaskan' : 'Belum Ditugaskan')}" disabled>`)}
@@ -416,6 +418,7 @@ Actions.exSave = () => {
       if (v !== (it[k] || '')) { changes++; it[k] = v; if (it.conf && it.conf[k] != null) it.conf[k] = 1; }
     });
     it.assignmentStatus = it.satker ? 'Sudah Ditugaskan' : 'Belum Ditugaskan';
+    if (isDprDoc(doc)) { it.mapAuto = false; it.dispNo = it.satker && doc.sipena ? (dispFor(doc, it.satker)?.no || '') : ''; }
   });
   const empty = doc.extraction.items.find(it => !it.arahan);
   if (empty) { toast('⚠ Poin arahan tidak boleh kosong.', 'error'); return; }
