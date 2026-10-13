@@ -128,8 +128,8 @@ Exporters.rekap = () => {
   d.groups.filter(g => ui.rekap.showEmpty || g.items.length).forEach(g => { combined.push({ lvl: 'Bidang', code: g.code, name: g.name, k: g.k }); g.sats.filter(s => ui.rekap.showEmpty || s.items.length).forEach(s => combined.push({ lvl: 'Satker', code: s.key, name: s.name, bidang: g.code, k: s.k })); });
   combined.push({ lvl: 'Total', code: 'OJK', name: 'TOTAL OJK', k: d.total });
   return {
-    name: 'Rekap_Bidang_Satker', sheet: 'Rekap Bidang & Satker', title: 'Rekap Tindak Lanjut per Bidang dan Satuan Kerja', subtitle: `Posisi per ${fmtDateLong(d.D)} · basis ${basis}`, rows: combined,
-    columns: [{ label: 'Level', get: r => r.lvl, w: 8 }, { label: 'Kode', get: r => r.code, w: 8 }, { label: 'Bidang / Satuan Kerja', get: r => (r.lvl === 'Satker' ? '   ' : '') + r.name, w: 60 }, ...kc],
+    name: 'Rekap_Bidang_Satker', sheet: 'Rekap Bidang & Satker', pdfSheets: ['Rincian per Bidang'], title: 'Rekap Tindak Lanjut per Bidang dan Satuan Kerja', subtitle: `Posisi per ${fmtDateLong(d.D)} · basis ${basis}`, rows: combined,
+    columns: [{ label: 'Level', get: r => r.lvl, w: 12 }, { label: 'Kode', get: r => r.code, w: 11 }, { label: 'Bidang / Satuan Kerja', get: r => (r.lvl === 'Satker' ? '   ' : '') + r.name, w: 60 }, ...kc],
     extraSheets: [
       { sheet: 'Rekap Bidang', rows: [...d.groups.map(g => ({ code: g.code, name: g.name, k: g.k })), { code: 'OJK', name: 'TOTAL OJK', k: d.total }], columns: [{ label: 'Kode', get: r => r.code, w: 8 }, { label: 'Bidang', get: r => r.name, w: 60 }, ...kc] },
       { sheet: 'Rincian per Bidang', rows: (() => { const bi = n => { const i = bidangList().findIndex(b => b.name === n); return i < 0 ? 99 : i; }; return d.items.slice().sort((a, b) => bi(a.ap.bidang) - bi(b.ap.bidang) || String(a.ap.satker || 'zzz').localeCompare(String(b.ap.satker || 'zzz')) || a.ap.id.localeCompare(b.ap.id)); })(), columns: [

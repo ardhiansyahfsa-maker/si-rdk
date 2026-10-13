@@ -636,13 +636,87 @@ function printReport(opts) {
 /** Shared toolbar buttons: Export Excel / Export CSV / Print */
 const exportButtons = key => `<div class="btn-group">
   <button class="btn sm" data-act="export" data-key="${key}" data-fmt="xlsx">${icon('sheet')}Export Excel</button>
+  <button class="btn sm" data-act="export" data-key="${key}" data-fmt="pdf">${icon('file')}Export PDF</button>
   <button class="btn sm" data-act="export" data-key="${key}" data-fmt="csv">${icon('download')}Export CSV</button>
   <button class="btn sm" data-act="export" data-key="${key}" data-fmt="print">${icon('printer')}Print</button></div>`;
 const Exporters = {};
 function runExport(key, fmt) {
   const ex = Exporters[key]; if (!ex) return;
   const def = ex();
-  if (fmt === 'print') printReport(def); else exportData({ ...def, format: fmt });
+  if (fmt === 'print') printReport(def); else if (fmt === 'pdf') exportPDF(def); else exportData({ ...def, format: fmt });
+}
+
+/* ------------------------------- Export PDF ------------------------------ */
+const PDF_LIBS = ['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'];
+function loadScript(src) { return new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = () => rej(new Error('Gagal memuat ' + src)); document.head.appendChild(el); }); }
+async function ensurePdfLib() {
+  if (!(window.jspdf && window.jspdf.jsPDF)) await loadScript(PDF_LIBS[0]);
+  const probe = new window.jspdf.jsPDF();
+  if (typeof probe.autoTable !== 'function') await loadScript(PDF_LIBS[1]);
+  return window.jspdf.jsPDF;
+}
+function logoDataURL() {
+  return new Promise(res => {
+    const img = new Image();
+    img.onload = () => { try { const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight; c.getContext('2d').drawImage(img, 0, 0); res({ url: c.toDataURL('image/png'), w: img.naturalWidth, h: img.naturalHeight }); } catch (e) { res(null); } };
+    img.onerror = () => res(null); img.src = 'assets/logo-ojk.png';
+  });
+}
+/** PDF-safe text: fonts standar PDF tidak memuat semua simbol Unicode. */
+const pdfText = v => String(v ?? '').replace(/[→⟶]/g, '->').replace(/≤/g, '<=').replace(/≥/g, '>=').replace(/[✓✔]/g, 'v').replace(/[⚠]/g, '!').replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"');
+async function exportPDF(def) {
+  if (!def.rows.length) { toast('Tidak ada data untuk diekspor dengan filter saat ini.', 'warn'); return; }
+  toast('Menyiapkan PDF…', 'info');
+  let JsPDF;
+  try { JsPDF = await ensurePdfLib(); } catch (e) { toast('Library PDF gagal dimuat. Periksa koneksi internet lalu coba lagi.', 'error'); return; }
+  const doc = new JsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 12;
+  const logo = await logoDataURL();
+  const header = () => {
+    let x = M;
+    if (logo) { const h = 11, w = h * logo.w / logo.h; doc.addImage(logo.url, 'PNG', M, 8, w, h); x = M + w + 5; }
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(35, 53, 72); doc.text('SI-RDK Terintegrasi', x, 12.5);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(110); doc.text('Sistem Informasi Rapat Dewan Komisioner Terintegrasi', x, 16.5);
+    doc.setDrawColor(35, 53, 72); doc.setLineWidth(0.5); doc.line(M, 21, W - M, 21);
+  };
+  const stamp = `Dicetak ${fmtDT(new Date().toISOString())} oleh ${cu().name} (${ROLE_LABEL[cu().role] || ''})`;
+  header();
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(20); doc.text(pdfText(def.title), M, 29);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(90); doc.text(pdfText(def.subtitle || ''), M, 34);
+  const PDF_DROP = ['Topik RDK', 'PIC', 'Status Penugasan', 'Catatan Verifikasi', 'Tindak Lanjut', 'Output', 'Kendala', 'Tanggal Update', 'Tanggal Selesai', 'Jumlah Bukti', 'Sumber Dokumen', 'Bidang Penanggung Jawab', 'Tanggal RDK', 'Progres Dilaporkan (%)', 'Kode Satker', 'Alasan Dampak OJK-wide', 'Catatan MRDK', 'Catatan Validator'];
+  /** PDF memakai kolom ringkas bila tabel terlalu lebar untuk A4 landscape. */
+  const fit = (cols, pick) => pick ? cols.filter(c => pick.includes(c.label)) : cols.length > 13 ? cols.filter(c => !PDF_DROP.includes(c.label) && !/^Keluaran /.test(c.label) && !(c.label === 'Bidang' && cols.some(x => x.label === 'Kode Bidang'))) : cols;
+  const sections = [{ title: null, columns: fit(def.columns, def.pdfCols), rows: def.rows }].concat((def.extraSheets || []).filter(x => !def.pdfSheets || def.pdfSheets.includes(x.sheet)).map(x => ({ title: x.sheet, columns: fit(x.columns, x.pdfCols), rows: x.rows })));
+  const dropped = def.columns.length - sections[0].columns.length;
+  if (dropped > 0) { doc.setFontSize(7.5); doc.setTextColor(120); doc.text(`Versi PDF ringkas: ${dropped} kolom rincian tidak ditampilkan — gunakan Export Excel untuk data lengkap.`, W - M, 34, { align: 'right' }); }
+  let startY = 38;
+  sections.forEach((sec, si) => {
+    if (sec.title) { doc.addPage(); header(); doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(20); doc.text(pdfText(sec.title), M, 29); startY = 33; }
+    const avail = W - 2 * M; const fs = sec.columns.length > 12 ? 6.4 : 7.4; const cw = fs * 0.2;
+    // Lebar minimum = token terpanjang (kata pada judul/teks panjang, atau nilai pendek utuh seperti tanggal), agar tidak terpotong.
+    const mins = sec.columns.map(c => {
+      let L = Math.max(...pdfText(c.label).split(/\s+/).map(x => x.length), 3);
+      sec.rows.slice(0, 200).forEach(r => { const v = pdfText(c.get(r)); L = Math.max(L, v.length <= 16 ? v.length : Math.max(...v.split(/\s+/).map(x => Math.min(x.length, 18)))); });
+      return L * cw + 3.2;
+    });
+    const sumMin = mins.reduce((a, b) => a + b, 0);
+    const extra = Math.max(0, avail - sumMin); const totalW = sec.columns.reduce((t, c) => t + (c.w || 14), 0); const scale = sumMin > avail ? avail / sumMin : 1;
+    const columnStyles = {}; sec.columns.forEach((c, i) => { columnStyles[i] = { cellWidth: mins[i] * scale + extra * (c.w || 14) / totalW }; });
+    doc.autoTable({
+      startY, margin: { left: M, right: M, top: 26, bottom: 14 },
+      head: [sec.columns.map(c => pdfText(c.label))],
+      body: sec.rows.map(r => sec.columns.map(c => pdfText(c.get(r)))),
+      styles: { font: 'helvetica', fontSize: fs, cellPadding: 1.4, overflow: 'linebreak', valign: 'top', lineColor: [221, 228, 235], lineWidth: 0.1 },
+      headStyles: { fillColor: [35, 53, 72], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [246, 248, 250] }, columnStyles,
+      didParseCell: d => { if (d.section !== 'body') return; const raw = sec.rows[d.row.index]; if (raw && (raw.lvl === 'Bidang' || raw.lvl === 'Total')) { d.cell.styles.fontStyle = 'bold'; d.cell.styles.fillColor = raw.lvl === 'Total' ? [226, 238, 248] : [236, 241, 246]; } },
+      didDrawPage: () => header()
+    });
+  });
+  const n = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(120); doc.text(pdfText(stamp), M, H - 7); doc.text(`Halaman ${i} dari ${n}`, W - M, H - 7, { align: 'right' }); }
+  const blob = doc.output('blob');
+  if (await saveFile(`${def.name}_${todayISO().replace(/-/g, '')}.pdf`, blob)) { audit('Export Data', def.name, '-', `PDF · ${def.rows.length} baris`); saveState(); toast(`Export PDF berhasil (${n} halaman).`); }
 }
 
 /* ------------------------------- Auth ------------------------------------ */

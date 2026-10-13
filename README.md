@@ -27,6 +27,7 @@ Menu **Monitoring → Rekap & Laporan** (Admin MRDK, Pimpinan): rekap bertingkat
 yang dihasilkan langsung dari data SI-RDK Terintegrasi.
 - Posisi data: hari ini, akhir TW, atau tanggal tertentu.
 - Basis progres: **terverifikasi MRDK** (default; update terakhir yang disetujui) atau dilaporkan satker.
+- Ekspor **PDF** (A4 landscape, kop OJK, nomor halaman; berisi rekap bidang & satker + rincian per bidang).
 - Ekspor Excel 3 sheet: *Rekap Bidang & Satker*, *Rekap Bidang*, *Rincian Penugasan*; juga CSV dan cetak.
 
 ## Prioritas & Trajectory
