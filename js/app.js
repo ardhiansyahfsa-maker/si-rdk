@@ -424,12 +424,12 @@ function registerPage(id, def) { Pages[id] = def; }
 const PAGE_ACCESS = {
   dashboard: ['admin', 'satker', 'viewer'], executive: ['admin', 'viewer'], register: ['admin', 'satker', 'viewer'], satker: ['admin', 'viewer'],
   documents: ['admin', 'viewer'], ocr: ['admin', 'viewer'], dataregister: ['admin', 'viewer'], update: ['admin', 'satker'],
-  verification: ['admin'], grc: ['admin', 'viewer', 'satker'], users: ['admin'], master: ['admin'], audit: ['admin']
+  verification: ['admin'], trajectory: ['admin', 'satker', 'viewer'], grc: ['admin', 'viewer', 'satker'], users: ['admin'], master: ['admin'], audit: ['admin']
 };
 const canSee = r => (PAGE_ACCESS[r] || []).includes(cu().role);
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
-  { group: 'Monitoring', items: [{ id: 'executive', label: 'Executive Dashboard', icon: 'gauge' }, { id: 'register', label: 'Rencana Aksi', icon: 'list' }, { id: 'satker', label: 'Progress Satker', icon: 'bars' }] },
+  { group: 'Monitoring', items: [{ id: 'executive', label: 'Executive Dashboard', icon: 'gauge' }, { id: 'register', label: 'Rencana Aksi', icon: 'list' }, { id: 'trajectory', label: 'Prioritas & Trajectory', icon: 'target' }, { id: 'satker', label: 'Progress Satker', icon: 'bars' }] },
   { group: 'Dokumen', items: [{ id: 'documents', label: 'Dokumen Rujukan', icon: 'file' }, { id: 'ocr', label: 'OCR & Extraction', icon: 'scan' }, { id: 'dataregister', label: 'Register', icon: 'database' }] },
   { group: 'Pelaksanaan', items: [{ id: 'update', label: 'Update Satker', icon: 'pencil' }] },
   { group: 'Verifikasi', items: [{ id: 'verification', label: 'Verifikasi Admin', icon: 'shield' }] },
@@ -442,6 +442,7 @@ function navBadge(id) {
   if (id === 'update' && isRole('satker')) { const n = visiblePlans().filter(a => canUpdate(a) && (a.verificationStatus === 'Perlu Perbaikan' || a.verificationStatus === 'Ditolak' || execStatus(a) === 'Terlambat' || a.progress === 0)).length; return n ? `<span class="nb hot">${n}</span>` : ''; }
   if (id === 'documents') { const n = appState.documents.filter(d => d.ocr_status !== 'Selesai').length; return n ? `<span class="nb">${n}</span>` : ''; }
   if (id === 'ocr') { const n = appState.documents.filter(d => d.extraction_status === 'Perlu Review').length; return n ? `<span class="nb hot">${n}</span>` : ''; }
+  if (id === 'trajectory') { const n = trajTodo().length; return n ? `<span class="nb hot">${n}</span>` : ''; }
   if (id === 'grc') { const n = grcTodo().length; return n ? `<span class="nb hot">${n}</span>` : ''; }
   if (id === 'register') return `<span class="nb">${visiblePlans().length}</span>`;
   return '';

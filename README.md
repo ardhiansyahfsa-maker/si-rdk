@@ -15,6 +15,15 @@ Catatan: data aplikasi tersimpan di localStorage browser masing-masing pengguna.
 ## Hak akses
 Tiga peran: **Admin MRDK** (`admin` / `admin123`), **Satker** (`satker` / `satker123`), **Pimpinan** (`viewer` / `viewer123`).
 
+## Prioritas & Trajectory
+Menu **Monitoring → Prioritas & Trajectory**:
+1. **Admin MRDK** menetapkan **Urgensi** dan **Dampak** (Tinggi/Sedang/Rendah) → kuadran P1 Kritis · P2 Tinggi · P3 Sedang · P4 Rendah.
+2. **Satker** mengonfirmasi, atau mengajukan penyesuaian (MRDK menetapkan final).
+3. Setelah dikonfirmasi, **Satker** menyusun **trajectory 4 triwulan** (TW I–IV tahun takwim): target progres kumulatif + tahapan/keluaran; TW IV = 100%; TW yang berakhir sebelum tanggal RDK otomatis 0%.
+4. **Admin MRDK** menyetujui atau mengembalikan trajectory.
+
+Setelah disetujui, progres dibandingkan dengan target TW terakhir yang telah berakhir → *Sesuai Trajectory* / *Tertinggal* / *Selesai*.
+
 ## Integrasi SI-GRC (simulasi)
 Penugasan **strategis berdampak OJK-wide** dialirkan ke SI-GRC sebagai input profil risiko satker pengampu:
 1. **Penandaan strategis** – Admin MRDK (SI-RDK).

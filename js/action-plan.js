@@ -230,6 +230,7 @@ function renderPlanDetail(ap) {
       <div class="d-sec"><div class="section-label"><span>Penanggung Jawab</span>${isRole('admin') ? `<button class="btn xs" data-act="assignPlan" data-id="${ap.id}">${icon('users', 'sm')}Ubah penugasan</button>` : ''}</div><dl class="kv">
         ${kv('Bidang', esc(ap.bidang || '—'))}${kv('Satker', ap.satker ? esc(ap.satker) : '<span style="color:var(--warn-ink)">Belum ditugaskan</span>')}${kv('PIC', esc(ap.pic || '—'))}${kv('Status Penugasan', badge(assignStatus(ap)))}
       </dl></div>
+      ${trajDrawerSection(ap)}
       ${grcDrawerSection(ap)}
       <div class="d-sec"><div class="section-label">Status</div><dl class="kv">
         ${kv('Status', badge(st) + (ap.manualStatus && st !== ap.manualStatus && st !== 'Selesai' ? ` <span class="small muted">(dilaporkan: ${esc(ap.manualStatus)})</span>` : ''))}
@@ -288,7 +289,7 @@ Actions.assignPlan = el => {
       <div class="field span-2"><label for="as-satker">Satker penanggung jawab</label><select class="select" id="as-satker"><option value="">— Belum ditugaskan —</option>${sats.map(s => `<option ${s.name === ap.satker ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
       <div class="field"><label for="as-bidang">Bidang</label><select class="select" id="as-bidang"><option value="">— Belum ditetapkan —</option>${bidangs.map(b => `<option ${b === ap.bidang ? 'selected' : ''}>${esc(b)}</option>`).join('')}</select></div>
       <div class="field"><label for="as-pic">PIC</label><input class="input" id="as-pic" value="${esc(ap.pic)}"></div>
-      <div class="field"><label for="as-priority">Prioritas</label><select class="select" id="as-priority">${PRIORITIES.map(p => `<option ${p === ap.priority ? 'selected' : ''}>${p}</option>`).join('')}</select></div>
+      <div class="field"><label for="as-priority">Prioritas</label><select class="select" id="as-priority" ${ap.cls ? 'disabled title="Ditentukan dari matriks urgensi × dampak"' : ''}>${PRIORITIES.map(p => `<option ${p === ap.priority ? 'selected' : ''}>${p}</option>`).join('')}</select>${ap.cls ? `<div class="small muted" style="margin-top:4px">Mengikuti ${QUADRANTS[quadOf(ap)].label} — ubah melalui Prioritas & Trajectory</div>` : ''}</div>
       <div class="field"><label for="as-target">Target selesai <span class="req">*</span></label><input class="input" type="date" id="as-target" value="${esc(ap.targetDate)}"></div>
       <div class="field span-2"><label for="as-note">Catatan penugasan</label><textarea class="textarea" id="as-note" style="min-height:60px" placeholder="Opsional — dicatat di audit trail"></textarea></div>
     </div>`,

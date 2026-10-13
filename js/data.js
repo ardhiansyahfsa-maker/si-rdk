@@ -5,7 +5,7 @@
    opened, so "Terlambat" and "mendekati deadline" stay meaningful in demos.
    ========================================================================= */
 
-const SEED_VERSION = 10;
+const SEED_VERSION = 11;
 
 const ROLE_LABEL = { admin: 'Admin / MRDK', satker: 'Satker Pelaksana', viewer: 'Pimpinan' };
 
@@ -277,6 +277,46 @@ function buildSeed() {
   grcLog.sort((a, b) => a.at.localeCompare(b.at)).forEach(l => { l.id = 'SYNC-' + String(++syncSeq).padStart(4, '0'); });
   grcLog.reverse();
 
+  // Prioritas (urgensi × dampak) & trajectory TW I–IV
+  const after = (iso, days, h = 10) => { const d = new Date(iso); d.setDate(d.getDate() + days); d.setHours(h, 10 + days % 40, 0, 0); return new Date(Math.min(d.getTime(), nowMs - 120000)).toISOString(); };
+  const STATE = { 23: 'none', 20: 'none', 10: 'proposed', 16: 'proposed', 22: 'proposed', 15: 'adjust', 24: 'confirmed', 18: 'confirmed', 5: 'returned', 2: 'submitted', 8: 'submitted' };
+  const OUT = [['Kajian awal dan rencana kerja'], ['Kajian awal dan rencana kerja', 'Penyelesaian dan pelaporan hasil'], ['Kajian dan pemetaan permasalahan', 'Penyusunan konsep / rancangan', 'Penyelesaian dan pelaporan hasil'], ['Kajian dan pemetaan permasalahan', 'Penyusunan konsep / rancangan', 'Pelaksanaan dan koordinasi pemangku kepentingan', 'Penyelesaian dan pelaporan hasil']];
+  const mkTraj = ap => {
+    const year = +ap.rdkDate.slice(0, 4); const ends = ['03-31', '06-30', '09-30', '12-31'].map(e => `${year}-${e}`);
+    const active = [0, 1, 2, 3].filter(i => ends[i] >= ap.rdkDate); const n = active.length;
+    return { year, items: [0, 1, 2, 3].map(i => { const k = active.indexOf(i); return k < 0 ? { target: 0, output: '', locked: true } : { target: i === 3 ? 100 : Math.round((k + 1) / n * 100 / 5) * 5, output: OUT[n - 1][k], locked: false }; }) };
+  };
+  actionPlans.forEach((ap, i) => {
+    const st = STATE[i] || 'approved'; if (st === 'none') return;
+    const urgency = ap.priority; const impact = ap.strategic ? 'Tinggi' : ap.priority === 'Tinggi' ? 'Sedang' : (i % 2 ? 'Sedang' : 'Rendah');
+    const q = quadrantOf(urgency, impact); ap.priority = QUADRANTS[q].prio;
+    const at = after(ap.createdAt, 1, 9);
+    ap.cls = { urgency, impact, note: '', by: MR, at, status: 'proposed', satker: null, proposal: null };
+    log(at, MR, 'admin', 'Penetapan Prioritas', ap.id, '-', `${QUADRANTS[q].label} (U ${urgency} · D ${impact})`, '');
+    if (st === 'proposed' || !ap.satker) return;
+    if (st === 'adjust') {
+      ap.cls.status = 'adjust'; ap.cls.satker = ap.satker;
+      ap.cls.proposal = { urgency: 'Rendah', impact, note: 'Program bersifat berkelanjutan dan dapat dijadwalkan bersama TPAKD; tenggat tidak mendesak.', by: ap.pic, at: after(ap.createdAt, 2, 14) };
+      log(ap.cls.proposal.at, ap.pic, 'satker', 'Usulan Penyesuaian Prioritas', ap.id, `U ${urgency} · D ${impact}`, `U Rendah · D ${impact}`, ap.cls.proposal.note);
+      return;
+    }
+    Object.assign(ap.cls, { status: 'confirmed', satker: ap.satker, confirmedBy: ap.pic, confirmedAt: after(ap.createdAt, 2, 11) });
+    log(ap.cls.confirmedAt, ap.pic, 'satker', 'Konfirmasi Prioritas', ap.id, 'Menunggu Konfirmasi Satker', 'Dikonfirmasi', QUADRANTS[q].label);
+    if (st === 'confirmed') return;
+    const t = mkTraj(ap); const sub = after(ap.createdAt, 4, 15);
+    ap.traj = { ...t, satker: ap.satker, status: 'submitted', by: ap.pic, at: sub, submittedAt: sub };
+    log(sub, ap.pic, 'satker', 'Ajukan Trajectory', ap.id, 'Menyusun Trajectory', 'Menunggu Persetujuan Trajectory', t.items.map((it, k) => `TW ${['I', 'II', 'III', 'IV'][k]} ${it.target}%`).join(' · '));
+    if (st === 'submitted') return;
+    const rv = after(ap.createdAt, 5, 10);
+    if (st === 'returned') {
+      Object.assign(ap.traj, { status: 'returned', reviewBy: MR, reviewAt: rv, reviewNote: 'Target TW III terlalu rendah dibanding target selesai; mohon rinci keluaran per provinsi.' });
+      log(rv, MR, 'admin', 'Persetujuan Trajectory', ap.id, 'Menunggu Persetujuan Trajectory', 'Dikembalikan', ap.traj.reviewNote);
+      return;
+    }
+    Object.assign(ap.traj, { status: 'approved', reviewBy: MR, reviewAt: rv, reviewNote: '' });
+    log(rv, MR, 'admin', 'Persetujuan Trajectory', ap.id, 'Menunggu Persetujuan Trajectory', 'Disetujui', '');
+  });
+
   // Extraction snapshots for already-processed documents (what the LLM produced at the time)
   documents.forEach(d => {
     if (d.ocr_status !== 'Selesai') return;
@@ -305,6 +345,11 @@ function buildSeed() {
   note(['admin', 'viewer'], 'Departemen Pengawasan Pasar Modal melakukan update progress RA-2026-014 menjadi 100%.', 'ok', { type: 'plan', id: 'RA-2026-014' }, actionPlans[13].updatedAt);
   note(['satker:Direktorat Market Conduct'], 'RA-2026-002 telah disetujui Admin MRDK.', 'ok', { type: 'plan', id: 'RA-2026-002' }, actionPlans[1].submissions[0].resultAt);
   note(['admin'], '4 penugasan strategis siap/perlu dikirim ke SI-GRC.', 'warn', { type: 'grc' }, T(0, 7, 30));
+  note(['admin'], 'Departemen Literasi dan Inklusi Keuangan mengajukan penyesuaian prioritas RA-2026-016.', 'warn', { type: 'plan', id: 'RA-2026-016' }, actionPlans[15].cls.proposal.at);
+  note(['admin'], '2 trajectory menunggu persetujuan MRDK (RA-2026-003, RA-2026-009).', 'warn', { type: 'plan', id: 'RA-2026-003' }, actionPlans[8].traj.submittedAt);
+  note(['satker:Direktorat Market Conduct'], 'Mohon konfirmasi prioritas RA-2026-023 yang ditetapkan MRDK.', 'warn', { type: 'plan', id: 'RA-2026-023' }, actionPlans[22].cls.at);
+  note(['satker:Direktorat Market Conduct'], 'Prioritas RA-2026-025 telah dikonfirmasi — silakan susun trajectory.', 'info', { type: 'plan', id: 'RA-2026-025' }, actionPlans[24].cls.confirmedAt);
+  note(['satker:Departemen Literasi dan Inklusi Keuangan'], 'Trajectory RA-2026-006 dikembalikan MRDK untuk diperbaiki.', 'late', { type: 'plan', id: 'RA-2026-006' }, actionPlans[5].traj.reviewAt);
   notifications.sort((a, b) => b.at.localeCompare(a.at));
 
   return {
