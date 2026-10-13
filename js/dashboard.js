@@ -26,7 +26,7 @@ function priorityScore(ap) {
   if (st === 'Selesai') return null;
   const d = daysToTarget(ap);
   let score = 0; const why = [];
-  if (st === 'Terlambat') { score += 1000 + (-d) * 4; why.push({ t: `Terlambat ${-d} hari`, c: 'red' }); }
+  if (isLate(ap)) { score += 1000 + (-d) * 4; why.push({ t: `Terlambat ${-d} hari`, c: 'red' }); }
   else if (d <= 21) { score += 600 + (21 - d) * 10; why.push({ t: d === 0 ? 'Deadline hari ini' : `Deadline ${d} hari lagi`, c: 'amber' }); }
   if (ap.priority === 'Tinggi') { score += 200; why.push({ t: 'Prioritas tinggi', c: 'red' }); }
   const last = ap.updateDate || ap.createdAt.slice(0, 10);
@@ -41,11 +41,11 @@ function topPriority(plans, n = 6) {
 }
 
 function riskPanel(k, plans) {
-  const near = plans.filter(a => { const d = daysToTarget(a); const s = execStatus(a); return s !== 'Selesai' && s !== 'Terlambat' && d >= 0 && d <= 14; }).length;
+  const near = plans.filter(a => { const d = daysToTarget(a); const s = execStatus(a); return s !== 'Selesai' && !isLate(a) && d >= 0 && d <= 14; }).length;
   const rows = [
     { sev: 'red', n: k.terlambat, t: 'action terlambat', s: 'Target terlewati, progress < 100%', f: 'status:Terlambat' },
     { sev: 'amber', n: k.mv, t: 'action menunggu verifikasi', s: isRole('admin') ? 'Perlu direview Admin / MRDK' : 'Sedang direview Admin / MRDK', f: isRole('admin') ? 'goto:verification' : 'ver:Menunggu Verifikasi' },
-    { sev: 'yellow', n: k.belum, t: 'action belum dimulai', s: 'Progress masih 0%', f: 'status:Belum Mulai' },
+    { sev: 'yellow', n: k.belum, t: 'action menunggu respon', s: 'Belum ada progres dari Satker', f: 'status:Menunggu Respon' },
     { sev: 'amber', n: near, t: 'mendekati deadline', s: 'Target dalam 14 hari ke depan', f: 'near:14' },
     { sev: 'violet', n: k.perbaikan + k.ditolak, t: 'perlu perbaikan / ditolak', s: 'Menunggu update ulang dari Satker', f: 'ver:Perlu Perbaikan,Ditolak' }
   ];
@@ -86,7 +86,7 @@ function processFlow(k) {
     <div class="steps">
       ${step('01', 'Upload Dokumen', 'Penerimaan naskah & ekstraksi', role === 'satker' ? `${k.docs} dokumen rujukan` : `${docs.length} dokumen · ${pendingDocs} perlu diproses`, 'documents', false, role === 'admin' && pendingDocs > 0)}
       ${step('02', 'Dashboard', 'Pemetaan & pemantauan', `${k.total} rencana aksi dipantau`, 'register', false, role === 'viewer')}
-      ${step('03', 'Update Status Satker', 'Progres, bukti, kendala', `${k.proses + k.arahan + k.terlambat} dalam pelaksanaan`, 'update', true, role === 'satker')}
+      ${step('03', 'Update Status Satker', 'Progres, bukti, kendala', `${k.total - k.selesai} dalam pelaksanaan`, 'update', true, role === 'satker')}
       ${step('04', 'Verifikasi Admin', 'Approve · revisi · tolak', `${k.mv} menunggu verifikasi`, 'verification', false, role === 'admin' && k.mv > 0)}
     </div>
     <div class="phases"><div class="phase"><b>01</b>Penerimaan & Pemetaan</div><div class="phase g"><b>02</b>Pelaksanaan</div><div class="phase"><b>03</b>Verifikasi & Pemanfaatan</div></div>
@@ -97,10 +97,10 @@ function kpiGrid(k) {
   return `<section class="kpis" aria-label="Indikator utama">
     ${kpiCard({ label: 'Total Dokumen', value: k.docs, sub: cu().role === 'satker' ? 'dokumen rujukan terkait Satker Anda' : `${appState.documents.filter(d => d.ocr_status === 'Selesai').length} telah diekstraksi`, ic: 'file', tone: 'blue', f: 'goto:documents' })}
     ${kpiCard({ label: 'Total Rencana Aksi', value: k.total, sub: `dari ${k.sessions} arahan RDK`, ic: 'list', tone: 'blue', f: 'all' })}
-    ${kpiCard({ label: 'Belum Dimulai', value: k.belum, sub: 'progress 0%', ic: 'clock', tone: 'grey', f: 'status:Belum Mulai' })}
-    ${kpiCard({ label: 'Dalam Proses', value: k.proses + k.arahan, sub: k.arahan ? `${k.arahan} menunggu arahan` : 'progress 1–99%', ic: 'activity', tone: 'blue', f: 'status:Dalam Proses,Menunggu Arahan' })}
+    ${kpiCard({ label: 'Menunggu Respon', value: k.belum, sub: 'belum ada progres dari Satker', ic: 'clock', tone: 'grey', f: 'status:Menunggu Respon' })}
+    ${kpiCard({ label: 'Dalam Proses', value: k.proses, sub: k.arahan ? `progress 1–99% · ${k.arahan} berlabel menunggu arahan` : 'progress 1–99%', ic: 'activity', tone: 'blue', f: 'status:Dalam Proses' })}
     ${kpiCard({ label: 'Selesai', value: k.selesai, sub: `${k.rate}% dari total rencana aksi`, ic: 'checkCircle', tone: 'green', f: 'status:Selesai' })}
-    ${kpiCard({ label: 'Terlambat', value: k.terlambat, sub: 'melewati target penyelesaian', ic: 'alert', tone: 'red', f: 'status:Terlambat' })}
+    ${kpiCard({ label: 'Berlabel Terlambat', value: k.terlambat, sub: 'target terlewati, progress < 100%', ic: 'alert', tone: 'red', f: 'status:Terlambat' })}
     ${kpiCard({ label: 'Menunggu Verifikasi', value: k.mv, sub: 'update dikirim Satker', ic: 'shield', tone: 'amber', f: isRole('admin') ? 'goto:verification' : 'ver:Menunggu Verifikasi' })}
     ${kpiCard({ label: 'Tingkat Penyelesaian', value: k.avg + '%', sub: 'rata-rata progress seluruh RA', ic: 'target', tone: 'teal', f: canSee('executive') ? 'goto:executive' : 'all', extra: `<div class="mini-track"><i style="width:${k.avg}%"></i></div>` })}
   </section>`;
@@ -151,8 +151,8 @@ registerPage('dashboard', {
 
 function drawDashboardCharts(plans) {
   const k = computeKpis(plans);
-  const order = ['Selesai', 'Dalam Proses', 'Menunggu Arahan', 'Belum Mulai', 'Terlambat'];
-  const counts = { 'Selesai': k.selesai, 'Dalam Proses': k.proses, 'Menunggu Arahan': k.arahan, 'Belum Mulai': k.belum, 'Terlambat': k.terlambat };
+  const order = ['Selesai', 'Dalam Proses', 'Menunggu Respon'];
+  const counts = { 'Selesai': k.selesai, 'Dalam Proses': k.proses, 'Menunggu Respon': k.belum };
   const lg = $('#donut-legend');
   if (lg) lg.innerHTML = order.map(s => `<span data-act="kpi" data-f="status:${s}"><i style="background:${STATUS_COLOR[s]}"></i>${s} <em>${counts[s]}</em></span>`).join('');
   mkChart('ch-donut', {
@@ -249,8 +249,8 @@ registerPage('executive', {
   },
   mount() {
     const plans = visiblePlans(); const k = computeKpis(plans);
-    const order = ['Selesai', 'Dalam Proses', 'Menunggu Arahan', 'Belum Mulai', 'Terlambat'];
-    const c = { 'Selesai': k.selesai, 'Dalam Proses': k.proses, 'Menunggu Arahan': k.arahan, 'Belum Mulai': k.belum, 'Terlambat': k.terlambat };
+    const order = ['Selesai', 'Dalam Proses', 'Menunggu Respon'];
+    const c = { 'Selesai': k.selesai, 'Dalam Proses': k.proses, 'Menunggu Respon': k.belum };
     $('#ex-legend').innerHTML = order.map(s => `<span data-act="kpi" data-f="status:${s}"><i style="background:${STATUS_COLOR[s]}"></i>${s} <em>${c[s]}</em></span>`).join('');
     mkChart('ex-donut', { type: 'doughnut', data: { labels: order, datasets: [{ data: order.map(s => c[s]), backgroundColor: order.map(s => STATUS_COLOR[s]), borderColor: '#fff', borderWidth: 2 }] }, options: { cutout: '70%', onClick: (e, els) => { if (els.length) applyQuickFilter('status:' + order[els[0].index]); } } });
     const stats = satkerStats(plans);
@@ -269,7 +269,7 @@ function satkerTable(stats) {
     ${stats.map(s => `<tr class="clickable" tabindex="0" data-act="kpi" data-f="satker:${esc(s.name)}">
       <td data-label="Satker" class="full"><b style="font-weight:600">${esc(s.name)}</b><div class="small muted">${esc(s.bidang)}</div></td>
       <td data-label="PIC">${esc(s.pic)}</td><td class="num tnum" data-label="Total">${s.k.total}</td><td class="num tnum" data-label="Selesai">${s.k.selesai}</td>
-      <td class="num tnum" data-label="Proses">${s.k.proses + s.k.arahan}</td><td class="num tnum" data-label="Belum">${s.k.belum}</td>
+      <td class="num tnum" data-label="Proses">${s.k.proses}</td><td class="num tnum" data-label="Menunggu Respon">${s.k.belum}</td>
       <td class="num tnum" data-label="Terlambat" style="${s.k.terlambat ? 'color:var(--danger-ink);font-weight:650' : ''}">${s.k.terlambat}</td><td class="num tnum" data-label="Menunggu Verif.">${s.k.mv}</td>
       <td data-label="Rata-rata"><div class="pbar"><div class="track"><div class="fill ${s.k.avg >= 75 ? 'done' : ''}" style="width:${s.k.avg}%"></div></div><span class="val">${s.k.avg}%</span></div></td>
       <td class="num tnum" data-label="Completion"><b>${s.k.rate}%</b></td></tr>`).join('')}
@@ -281,8 +281,8 @@ Exporters.satker = () => {
     name: 'Kinerja_Satker', sheet: 'Kinerja Satker', title: 'Kinerja Satker — Tindak Lanjut Rencana Aksi', subtitle: `Per ${fmtDateLong(todayISO())}`, rows: stats,
     columns: [
       { label: 'Satker', get: s => s.name, w: 44 }, { label: 'Bidang', get: s => s.bidang, w: 32 }, { label: 'PIC', get: s => s.pic, w: 18 },
-      { label: 'Total RA', get: s => s.k.total, w: 9 }, { label: 'Selesai', get: s => s.k.selesai, w: 9 }, { label: 'Dalam Proses', get: s => s.k.proses + s.k.arahan, w: 12 },
-      { label: 'Belum Mulai', get: s => s.k.belum, w: 11 }, { label: 'Terlambat', get: s => s.k.terlambat, w: 10 }, { label: 'Menunggu Verifikasi', get: s => s.k.mv, w: 18 },
+      { label: 'Total RA', get: s => s.k.total, w: 9 }, { label: 'Selesai', get: s => s.k.selesai, w: 9 }, { label: 'Dalam Proses', get: s => s.k.proses, w: 12 },
+      { label: 'Menunggu Respon', get: s => s.k.belum, w: 15 }, { label: 'Label Terlambat', get: s => s.k.terlambat, w: 14 }, { label: 'Menunggu Verifikasi', get: s => s.k.mv, w: 18 },
       { label: 'Rata-rata Progress (%)', get: s => s.k.avg, w: 20 }, { label: 'Completion Rate (%)', get: s => s.k.rate, w: 18 }
     ]
   };
@@ -311,7 +311,7 @@ registerPage('satker', {
         scales: { x: { min: 0, max: 100, ticks: { callback: v => v + '%' }, grid: { color: '#EEF2F5' } }, y: { grid: { display: false }, ticks: { font: { family: "'IBM Plex Mono', monospace" } } } },
         onClick: (e, els) => { if (els.length) applyQuickFilter('satker:' + stats[els[0].index].name); } }
     });
-    const order = ['Selesai', 'Dalam Proses', 'Menunggu Arahan', 'Belum Mulai', 'Terlambat'];
+    const order = ['Selesai', 'Dalam Proses', 'Menunggu Respon'];
     mkChart('ps-stack', {
       type: 'bar', data: { labels: stats.map(s => s.key), datasets: order.map(st => ({ label: st, data: stats.map(s => s.list.filter(a => execStatus(a) === st).length), backgroundColor: STATUS_COLOR[st], maxBarThickness: 36, borderRadius: 2 })) },
       options: { plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 10, boxHeight: 10 } }, tooltip: { mode: 'index', callbacks: { title: c => stats[c[0].dataIndex].name } } }, scales: { x: { stacked: true, grid: { display: false }, ticks: { font: { family: "'IBM Plex Mono', monospace" } } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#EEF2F5' } } } }

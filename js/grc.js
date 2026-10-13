@@ -29,15 +29,15 @@ ui.grc = { q: '', status: '', satker: '' };
 function grcSignal(ap) {
   const st = execStatus(ap); const d = daysToTarget(ap);
   if (st === 'Selesai' && ap.verificationStatus === 'Disetujui') return { level: 'Rendah', reason: 'Tindak lanjut selesai dan disetujui MRDK' };
-  if (st === 'Terlambat') return { level: 'Tinggi', reason: `Melewati target ${-d} hari dengan progress ${ap.progress}%` };
+  if (isLate(ap)) return { level: 'Tinggi', reason: `Melewati target ${-d} hari dengan progress ${ap.progress}%` };
   if (['Ditolak', 'Perlu Perbaikan'].includes(ap.verificationStatus)) return { level: 'Sedang', reason: `Update satker ${ap.verificationStatus === 'Ditolak' ? 'ditolak' : 'dikembalikan untuk perbaikan'} oleh MRDK` };
-  if (st === 'Menunggu Arahan') return { level: 'Sedang', reason: 'Pelaksanaan menunggu arahan pimpinan' };
+  if (onHold(ap)) return { level: 'Sedang', reason: 'Pelaksanaan menunggu arahan pimpinan' };
   if (st !== 'Selesai' && d != null && d <= 30 && ap.progress < 50) return { level: 'Sedang', reason: `Target ${d} hari lagi, progress baru ${ap.progress}%` };
   if (st === 'Selesai') return { level: 'Rendah', reason: 'Selesai, menunggu verifikasi MRDK' };
   return { level: 'Rendah', reason: 'Pelaksanaan sesuai rencana' };
 }
 /** Sidik data pelaksanaan: bila berubah setelah selesai dicatat → perlu sinkron ulang. */
-const grcFingerprint = ap => [ap.satker, ap.progress, execStatus(ap), ap.verificationStatus, ap.targetDate, grcSignal(ap).level].join('|');
+const grcFingerprint = ap => [ap.satker, ap.progress, execStatus(ap) + (isLate(ap) ? '+T' : ''), ap.verificationStatus, ap.targetDate, grcSignal(ap).level].join('|');
 function grcStatus(ap) {
   if (!ap.strategic) return null;
   if (!ap.satker) return 'Menunggu Penugasan';
@@ -75,7 +75,7 @@ function grcPayload(ap) {
     classification: 'Penugasan Strategis', impact_scope: 'OJK-wide', mrdk_note: g.note || null,
     owner_unit: { code: sat?.key || null, name: ap.satker, bidang: ap.bidang, pic: ap.pic },
     assignment: { rdk_date: ap.rdkDate, topic: ap.topic, directive: ap.arahan, source_document: ap.documentName, priority: ap.priority },
-    execution: { target_date: ap.targetDate, progress_pct: ap.progress, status: execStatus(ap), verification_status: ap.verificationStatus, last_update: ap.updateDate || null, obstacles: ap.kendala || null },
+    execution: { target_date: ap.targetDate, progress_pct: ap.progress, status: execStatus(ap), late: isLate(ap), awaiting_direction: onHold(ap), verification_status: ap.verificationStatus, last_update: ap.updateDate || null, obstacles: ap.kendala || null },
     execution_indicator: { level: s.level, reason: s.reason }
   };
 }
@@ -143,7 +143,7 @@ Actions.grcMap = el => {
       <dl class="kv" style="margin-bottom:14px">
         <dt>Penugasan</dt><dd>${esc(ap.arahan)}</dd>
         ${g.note ? `<dt>Catatan MRDK</dt><dd>${esc(g.note)}</dd>` : ''}
-        <dt>Pelaksanaan</dt><dd>${badge(execStatus(ap))} ${ap.progress}% · target ${fmtDate(ap.targetDate)}</dd>
+        <dt>Pelaksanaan</dt><dd>${statusHTML(ap)} ${ap.progress}% · target ${fmtDate(ap.targetDate)}</dd>
         <dt>Indikator SI-RDK</dt><dd>${sigTag(s.level)} <span class="small muted">· ${esc(s.reason)}</span></dd>
         ${g.recorded ? `<dt>Tercatat saat ini</dt><dd>${esc(g.recorded.category)} · ${esc(g.recorded.riskName)} · ${sigTag(g.recorded.level)}</dd>` : ''}
       </dl>

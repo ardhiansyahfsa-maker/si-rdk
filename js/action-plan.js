@@ -13,7 +13,7 @@ const PLAN_COLS = {
   bidang: { label: 'Bidang', sort: 'bidang', cell: a => `<span style="display:block;min-width:120px">${bidangCell(a.bidang)}</span>` },
   satker: { label: 'Satker', sort: 'satker', cell: a => a.satker ? `<span style="display:block;min-width:130px">${esc(a.satker)}</span>` : '<span class="muted">—</span>' },
   assign: { label: 'Status Penugasan', sort: 'assign', cell: a => badge(assignStatus(a)) },
-  status: { label: 'Status Pelaksanaan', sort: 'status', cell: a => badge(execStatus(a)) },
+  status: { label: 'Status Pelaksanaan', sort: 'status', cell: a => statusHTML(a) },
   progress: { label: 'Progress', sort: 'progress', cell: a => pbar(a) },
   target: { label: 'Target Selesai', sort: 'targetDate', cell: a => targetCell(a) },
   ver: { label: 'Status Verifikasi', sort: 'verificationStatus', cell: a => badge(a.verificationStatus) },
@@ -48,7 +48,7 @@ function filterPlans(plans, f) {
   const today = todayISO();
   return plans.filter(a => {
     if (q && ![a.id, a.topic, a.arahan, a.satker, a.bidang, a.pic, a.documentName, a.tindakLanjut].some(v => String(v || '').toLowerCase().includes(q))) return false;
-    if (!inList(execStatus(a), f.status)) return false;
+    if (f.status && !f.status.split(',').some(s => statusMatch(a, s))) return false;
     if (!inList(a.verificationStatus, f.ver)) return false;
     if (!inList(assignStatus(a), f.assign)) return false;
     if (f.satker && !inList(a.satker, f.satker)) return false;
@@ -66,7 +66,7 @@ function filterPlans(plans, f) {
       if (f.prog === '50-99' && (p < 50 || p > 99)) return false;
       if (f.prog === '100' && p < 100) return false;
     }
-    if (f.near) { const d = diffDays(a.targetDate, today); const s = execStatus(a); if (s === 'Selesai' || s === 'Terlambat' || d < 0 || d > f.near) return false; }
+    if (f.near) { const d = diffDays(a.targetDate, today); const s = execStatus(a); if (s === 'Selesai' || isLate(a) || d < 0 || d > f.near) return false; }
     return true;
   });
 }
@@ -109,7 +109,7 @@ registerPage('register', {
       <section class="panel">
         <div class="toolbar">
           <div class="grow">${icon('search')}<input class="input" id="rf-q" placeholder="Cari ID, topik, poin arahan, satker, bidang…" value="${esc(f.q)}" data-input="regSearch"></div>
-          <select class="select sm" id="rf-status" data-change="regFilter" aria-label="Status pelaksanaan">${optList(EXEC_STATUSES, f.status, 'Semua status')}</select>
+          <select class="select sm" id="rf-status" data-change="regFilter" aria-label="Status pelaksanaan">${optList(STATUS_FILTERS, f.status, 'Semua status')}</select>
           ${sat ? '' : `<select class="select sm" id="rf-satker" data-change="regFilter" aria-label="Satker">${optList(ms.satker.map(s => s.name), f.satker, 'Semua satker')}</select>`}
           <select class="select sm" id="rf-ver" data-change="regFilter" aria-label="Status verifikasi">${optList(VER_STATUSES, f.ver, 'Semua verifikasi')}</select>
           <button class="btn sm ${f.showFilters ? 'primary' : ''}" data-act="regToggleFilters">${icon('filter', 'sm')}Filter lanjutan</button>
@@ -146,7 +146,7 @@ Actions.regReset = () => { resetRegFilters(); renderPage(true); };
 const PLAN_EXPORT_COLS = [
   { label: 'ID', get: a => a.id, w: 13 }, { label: 'Tanggal RDK', get: a => a.rdkDate, w: 12 }, { label: 'Topik RDK', get: a => a.topic, w: 36 },
   { label: 'Poin Arahan', get: a => a.arahan, w: 70 }, { label: 'Bidang', get: a => a.bidang, w: 28 }, { label: 'Satker', get: a => a.satker, w: 40 }, { label: 'PIC', get: a => a.pic, w: 16 },
-  { label: 'Status Penugasan', get: a => assignStatus(a), w: 16 }, { label: 'Status Pelaksanaan', get: a => execStatus(a), w: 16 }, { label: 'Progress (%)', get: a => a.progress, w: 10 },
+  { label: 'Status Penugasan', get: a => assignStatus(a), w: 16 }, { label: 'Status Pelaksanaan', get: a => execStatus(a), w: 16 }, { label: 'Label', get: a => [isLate(a) ? 'Terlambat' : '', onHold(a) ? 'Menunggu Arahan' : ''].filter(Boolean).join(', '), w: 18 }, { label: 'Progress (%)', get: a => a.progress, w: 10 },
   { label: 'Prioritas', get: a => a.priority, w: 9 }, { label: 'Target Selesai', get: a => a.targetDate, w: 13 }, { label: 'Status Verifikasi', get: a => a.verificationStatus, w: 18 },
   { label: 'Catatan Verifikasi', get: a => a.verificationNote, w: 40 }, { label: 'Tindak Lanjut', get: a => a.tindakLanjut, w: 50 }, { label: 'Output', get: a => a.output, w: 36 },
   { label: 'Kendala', get: a => a.kendala, w: 36 }, { label: 'Tanggal Update', get: a => a.updateDate, w: 13 }, { label: 'Tanggal Selesai', get: a => a.completedDate, w: 13 },
@@ -216,7 +216,7 @@ function renderPlanDetail(ap) {
     ? `<div class="ai-banner ${ap.verificationStatus === 'Disetujui' ? 'ok' : ap.verificationStatus === 'Ditolak' ? 'red' : 'violet'}" style="margin-top:12px">${icon(ap.verificationStatus === 'Disetujui' ? 'checkCircle' : 'undo')}<span><b>Catatan verifikasi:</b> ${esc(ap.verificationNote)}</span></div>` : '';
   const kv = (k, v) => `<dt>${k}</dt><dd>${v}</dd>`;
   return `<div class="drawer-head">
-      <div class="row"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="mono" style="font-weight:600;color:var(--blue-700);font-size:13px">${ap.id}</span>${badge(st)}${badge(ap.verificationStatus)}<span class="prio ${ap.priority}">PRIORITAS ${ap.priority.toUpperCase()}</span></div>
+      <div class="row"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="mono" style="font-weight:600;color:var(--blue-700);font-size:13px">${ap.id}</span>${statusHTML(ap)}${badge(ap.verificationStatus)}<span class="prio ${ap.priority}">PRIORITAS ${ap.priority.toUpperCase()}</span></div>
         <button class="icon-btn" data-act="closeDrawer" aria-label="Tutup detail">${icon('x')}</button></div>
       <h2>${esc(ap.arahan)}</h2>
       <div class="small muted">${esc(ap.topic)}</div>
@@ -233,7 +233,7 @@ function renderPlanDetail(ap) {
       ${trajDrawerSection(ap)}
       ${grcDrawerSection(ap)}
       <div class="d-sec"><div class="section-label">Status</div><dl class="kv">
-        ${kv('Status', badge(st) + (ap.manualStatus && st !== ap.manualStatus && st !== 'Selesai' ? ` <span class="small muted">(dilaporkan: ${esc(ap.manualStatus)})</span>` : ''))}
+        ${kv('Status', statusHTML(ap, true))}
         ${kv('Progress', pbar(ap))}
         ${kv('Target Selesai', `${fmtDateLong(ap.targetDate)} ${st === 'Selesai' ? '' : d < 0 ? `<span class="small" style="color:var(--danger-ink)">· lewat ${-d} hari</span>` : `<span class="small muted">· ${d} hari lagi</span>`}`)}
         ${kv('Last Update', ap.updateDate ? `${fmtDateLong(ap.updateDate)}` : '<span class="muted">Belum ada update</span>')}
@@ -333,7 +333,7 @@ registerPage('update', {
   render() {
     const u = cu(); const all = updList();
     const tab = UPD_TABS.find(t => t.id === ui.upd.tab) || UPD_TABS[0];
-    const rows = sortPlans(all.filter(tab.test), { key: 'targetDate', dir: 1 }).sort((a, b) => (['Perlu Perbaikan', 'Ditolak'].includes(b.verificationStatus) - ['Perlu Perbaikan', 'Ditolak'].includes(a.verificationStatus)) || ((execStatus(b) === 'Terlambat') - (execStatus(a) === 'Terlambat')));
+    const rows = sortPlans(all.filter(tab.test), { key: 'targetDate', dir: 1 }).sort((a, b) => (['Perlu Perbaikan', 'Ditolak'].includes(b.verificationStatus) - ['Perlu Perbaikan', 'Ditolak'].includes(a.verificationStatus)) || (isLate(b) - isLate(a)));
     const k = computeKpis(all);
     const rev = all.filter(a => ['Perlu Perbaikan', 'Ditolak'].includes(a.verificationStatus));
     return `<div class="page">
@@ -357,12 +357,9 @@ Actions.updTab = el => { ui.upd.tab = el.dataset.t; renderPage(true); };
 Actions.updSatker = el => { ui.upd.satker = el.value; renderPage(true); };
 Actions.openUpdate = el => openUpdateForm(el.dataset.id);
 
-function formStatusFor(ap) { const b = baseStatus(ap); return b; }
+function formStatusFor(ap) { return onHold(ap) ? 'Menunggu Arahan' : baseStatus(ap); }
 function previewStatus(p, chosen, target) {
-  if (p >= 100) return 'Selesai';
-  if (target && target < todayISO()) return 'Terlambat';
-  if (chosen === 'Menunggu Arahan') return 'Menunggu Arahan';
-  return p <= 0 ? 'Belum Mulai' : 'Dalam Proses';
+  return statusHTML({ progress: p, targetDate: target, manualStatus: chosen === 'Menunggu Arahan' ? 'Menunggu Arahan' : null });
 }
 function openUpdateForm(id) {
   const ap = findPlan(id); if (!ap) return;
@@ -380,7 +377,7 @@ function openUpdateForm(id) {
       ${ap.draft ? `<div class="ai-banner">${icon('save')}<span>Melanjutkan draft yang disimpan ${relTime(ap.draft.savedAt)}.</span></div>` : ''}
       <div class="quote" style="font-size:13px">${esc(ap.arahan)}</div>
       <div class="form-grid">
-        <div class="field"><label for="uf-status">Status</label><select class="select" id="uf-status">${['Belum Mulai', 'Dalam Proses', 'Menunggu Arahan', 'Selesai'].map(s => `<option ${s === v.status ? 'selected' : ''}>${s}</option>`).join('')}</select><span class="hint">“Terlambat” ditetapkan otomatis oleh sistem.</span></div>
+        <div class="field"><label for="uf-status">Status</label><select class="select" id="uf-status">${[['Menunggu Respon', 'Menunggu Respon (belum ada progres)'], ['Dalam Proses', 'Dalam Proses'], ['Menunggu Arahan', 'Dalam Proses · menunggu arahan pimpinan'], ['Selesai', 'Selesai']].map(([s, l]) => `<option value="${s}" ${s === v.status ? 'selected' : ''}>${l}</option>`).join('')}</select><span class="hint">Label “Terlambat” ditambahkan otomatis oleh sistem bila target terlewati.</span></div>
         <div class="field"><label for="uf-date">Tanggal Update</label><input class="input" type="date" id="uf-date" value="${esc(v.updateDate)}" max="${todayISO()}"></div>
         <div class="field span-2"><label for="uf-progress">Progress</label><div class="range-row"><input type="range" id="uf-progress" min="0" max="100" step="5" value="${v.progress}"><span class="range-val" id="uf-pval">${v.progress}%</span></div>
           <span class="hint" id="uf-hint"></span></div>
@@ -397,17 +394,17 @@ function openUpdateForm(id) {
       const paint = () => {
         const p = +rng.value; $('#uf-pval', el).textContent = p + '%';
         const st = previewStatus(p, sel.value, tgt.value);
-        $('#uf-hint', el).innerHTML = `Status sistem setelah disimpan: ${badge(st)}${p >= 100 ? ' · bukti wajib dilampirkan' : ''}`;
-        $('#uf-thint', el).innerHTML = tgt.value && tgt.value < todayISO() && p < 100 ? '<span style="color:var(--danger-ink)">Target telah lewat — status akan menjadi Terlambat.</span>' : tgt.value !== ap.targetDate ? `<span style="color:var(--warn-ink)">Diubah dari ${fmtDate(ap.targetDate)} — perlu persetujuan Admin.</span>` : '';
+        $('#uf-hint', el).innerHTML = `Status sistem setelah disimpan: ${st}${p >= 100 ? ' · bukti wajib dilampirkan' : ''}`;
+        $('#uf-thint', el).innerHTML = tgt.value && tgt.value < todayISO() && p < 100 ? '<span style="color:var(--danger-ink)">Target telah lewat — akan diberi label Terlambat.</span>' : tgt.value !== ap.targetDate ? `<span style="color:var(--warn-ink)">Diubah dari ${fmtDate(ap.targetDate)} — perlu persetujuan Admin.</span>` : '';
       };
       rng.addEventListener('input', () => {
         const p = +rng.value;
-        if (p >= 100) sel.value = 'Selesai'; else if (p === 0 && sel.value !== 'Menunggu Arahan') sel.value = 'Belum Mulai'; else if (sel.value !== 'Menunggu Arahan') sel.value = 'Dalam Proses';
+        if (p >= 100) sel.value = 'Selesai'; else if (p === 0 && sel.value !== 'Menunggu Arahan') sel.value = 'Menunggu Respon'; else if (sel.value !== 'Menunggu Arahan') sel.value = 'Dalam Proses';
         paint();
       });
       sel.addEventListener('change', () => {
         const s = sel.value; let p = +rng.value;
-        if (s === 'Selesai') p = 100; else if (s === 'Belum Mulai') p = 0; else if (s === 'Dalam Proses' && (p === 0 || p === 100)) p = p === 0 ? 10 : 90; else if (s === 'Menunggu Arahan' && p === 100) p = 90;
+        if (s === 'Selesai') p = 100; else if (s === 'Menunggu Respon') p = 0; else if (s === 'Dalam Proses' && (p === 0 || p === 100)) p = p === 0 ? 10 : 90; else if (s === 'Menunggu Arahan' && p === 100) p = 90;
         rng.value = p; paint();
       });
       tgt.addEventListener('change', paint);
@@ -454,7 +451,7 @@ function saveUpdate(ap, m, files, submit) {
     message: `Progress <b>${ap.progress}% → ${v.progress}%</b>, status <b>${previewStatus(v.progress, v.status, v.targetDate)}</b>${files.length ? `, ${files.length} bukti baru` : ''}. Setelah dikirim, update <b>tidak dapat diubah</b> sampai Admin / MRDK melakukan review.`,
     onConfirm: () => {
       const now = new Date().toISOString();
-      const prev = { progress: ap.progress, status: execStatus(ap), target: ap.targetDate, ver: ap.verificationStatus };
+      const prev = { progress: ap.progress, status: execStatus(ap) + (onHold(ap) ? ' · Menunggu Arahan' : ''), target: ap.targetDate, ver: ap.verificationStatus };
       ap.progress = v.progress;
       ap.manualStatus = v.status === 'Menunggu Arahan' && v.progress < 100 ? 'Menunggu Arahan' : null;
       Object.assign(ap, { tindakLanjut: v.tindakLanjut, output: v.output, kendala: v.kendala, catatan: v.catatan, targetDate: v.targetDate, updateDate: v.updateDate, latestUpdate: v.tindakLanjut, updatedAt: now });
@@ -463,7 +460,8 @@ function saveUpdate(ap, m, files, submit) {
       ap.verificationStatus = 'Menunggu Verifikasi'; ap.verificationNote = ''; ap.draft = null;
       ap.submissions.push({ at: now, by: cu().name, progressFrom: prev.progress, progressTo: v.progress, status: execStatus(ap), tindakLanjut: v.tindakLanjut, output: v.output, kendala: v.kendala, catatan: v.catatan, targetDate: v.targetDate, prevTarget: prev.target, evidence: ap.evidence.map(e => e.name), result: null, resultNote: '', resultBy: '', resultAt: '' });
       if (prev.progress !== v.progress) audit('Update Progress', ap.id, prev.progress + '%', v.progress + '%', v.tindakLanjut.slice(0, 120));
-      if (prev.status !== execStatus(ap)) audit('Update Status', ap.id, prev.status, execStatus(ap), v.status === 'Menunggu Arahan' ? v.kendala : '');
+      const nowSt = execStatus(ap) + (onHold(ap) ? ' · Menunggu Arahan' : '');
+      if (prev.status !== nowSt) audit('Update Status', ap.id, prev.status, nowSt, v.status === 'Menunggu Arahan' ? v.kendala : '');
       if (prev.target !== v.targetDate) audit('Ubah Target', ap.id, fmtDate(prev.target), fmtDate(v.targetDate), 'Diusulkan Satker');
       files.forEach(f => audit('Upload Bukti', ap.id, '-', f.name));
       audit('Submit Verifikasi', ap.id, 'Draft', 'Menunggu Verifikasi', v.catatan);

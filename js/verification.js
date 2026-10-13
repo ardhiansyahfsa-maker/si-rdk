@@ -21,7 +21,7 @@ function verTableHTML() {
       <td data-label="Satker"><span style="display:block;min-width:130px">${esc(a.satker)}</span><span class="small muted">${esc(s.by)}</span></td>
       <td data-label="Poin Arahan" class="arahan full"><span class="clamp-2">${esc(a.arahan)}</span></td>
       <td data-label="Progress"><div class="tl-change" style="margin:0 0 4px"><span class="old">${s.progressFrom}%</span>${icon('arrowRight', 'sm')}<span class="new">${s.progressTo}%</span></div>${pbar(a)}</td>
-      <td data-label="Status">${badge(execStatus(a))}</td>
+      <td data-label="Status">${statusHTML(a)}</td>
       <td data-label="Tanggal Update"><span class="nowrap tnum">${fmtDT(s.at)}</span>${a.verificationStatus === 'Menunggu Verifikasi' ? `<div class="small" style="color:${waitDays > 2 ? 'var(--danger-ink)' : 'var(--ink-3)'}">menunggu ${waitDays === 0 ? '< 1' : waitDays} hari</div>` : ''}</td>
       <td data-label="Evidence"><span class="chip">${icon('clip', 'sm')}${a.evidence.length} berkas</span></td>
       <td data-label="Verifikasi">${badge(a.verificationStatus)}</td>
@@ -76,7 +76,7 @@ function openReview(id) {
           <div class="small muted" style="margin-top:6px">${esc(ap.topic)} · RDK ${fmtDate(ap.rdkDate)} · prioritas ${ap.priority.toLowerCase()}</div></div>
         <div class="cmp"><div class="side"><small>Sebelum</small><b>${s.progressFrom}%</b></div>${icon('arrowRight', 'lg')}<div class="side"><small>Diajukan</small><b style="color:var(--green-700)">${s.progressTo}%</b></div></div>
         <dl class="dl-grid" style="margin:0">
-          ${field('Status', badge(execStatus(ap)))}
+          ${field('Status', statusHTML(ap))}
           ${field('Target', `${fmtDate(s.targetDate)}${targetChanged ? ` <span class="badge b-amber plain">diubah dari ${fmtDate(s.prevTarget)}</span>` : ''}`)}
           <div class="dl span-2"><dt>Tindak lanjut Satker</dt><dd>${esc(s.tindakLanjut || '—')}</dd></div>
           ${field('Output', esc(s.output || '—'))}${field('Kendala', esc(s.kendala || '—'))}

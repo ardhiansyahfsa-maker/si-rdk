@@ -146,36 +146,45 @@ function resetDemo() {
 const cu = () => appState.currentUser || {};
 
 /* ---------------------------- Domain rules ------------------------------- */
-const EXEC_STATUSES = ['Belum Mulai', 'Dalam Proses', 'Menunggu Arahan', 'Selesai', 'Terlambat'];
+const EXEC_STATUSES = ['Menunggu Respon', 'Dalam Proses', 'Selesai'];
+/* Label penanda (bukan status): Terlambat, Menunggu Arahan, Menunggu Verifikasi */
+const STATUS_FILTERS = [...EXEC_STATUSES, 'Terlambat', 'Menunggu Arahan'];
 const VER_STATUSES = ['Belum Diverifikasi', 'Menunggu Verifikasi', 'Disetujui', 'Ditolak', 'Perlu Perbaikan'];
 const ASSIGN_STATUSES = ['Sudah Ditugaskan', 'Belum Ditugaskan'];
 const PRIORITIES = ['Tinggi', 'Sedang', 'Rendah'];
-const STATUS_COLOR = { 'Selesai': '#2EAD6B', 'Dalam Proses': '#2986B8', 'Menunggu Arahan': '#F5A623', 'Belum Mulai': '#A7B4C1', 'Terlambat': '#D9534F' };
+const STATUS_COLOR = { 'Selesai': '#2EAD6B', 'Dalam Proses': '#2986B8', 'Menunggu Respon': '#A7B4C1', 'Menunggu Arahan': '#F5A623', 'Terlambat': '#D9534F' };
 const BADGE_CLASS = {
-  'Belum Mulai': 'b-grey', 'Dalam Proses': 'b-blue', 'Menunggu Arahan': 'b-amber', 'Selesai': 'b-green', 'Terlambat': 'b-red',
+  'Menunggu Respon': 'b-grey', 'Dalam Proses': 'b-blue', 'Menunggu Arahan': 'b-amber', 'Selesai': 'b-green', 'Terlambat': 'b-red',
   'Belum Diverifikasi': 'b-outline', 'Menunggu Verifikasi': 'b-amber', 'Disetujui': 'b-green', 'Ditolak': 'b-red', 'Perlu Perbaikan': 'b-violet',
   'Sudah Ditugaskan': 'b-teal', 'Belum Ditugaskan': 'b-outline',
   'Belum Diproses': 'b-grey', 'Sedang Diproses': 'b-blue', 'Perlu Review': 'b-amber', 'Tersimpan di Register': 'b-teal', 'Belum Diekstraksi': 'b-grey', 'Diunggah': 'b-grey', 'Draft': 'b-outline', 'Aktif': 'b-green', 'Nonaktif': 'b-outline'
 };
 const badge = (text, extra = '') => `<span class="badge ${BADGE_CLASS[text] || 'b-grey'} ${extra}">${esc(text)}</span>`;
 
-/** Status Pelaksanaan — rules §16 / §31: 100% → Selesai; target lewat & <100% → Terlambat; 0% → Belum Mulai; else Dalam Proses. */
+/** Status Pelaksanaan (3 status, selaras SI-RDK eksisting): 100% → Selesai; 0% → Menunggu Respon; selain itu → Dalam Proses.
+ *  Terlambat (target lewat & < 100%), Menunggu Arahan (ditandai satker) dan Menunggu Verifikasi adalah LABEL, bukan status. */
 function baseStatus(ap) {
   if (ap.progress >= 100) return 'Selesai';
-  if (ap.manualStatus === 'Menunggu Arahan') return 'Menunggu Arahan';
-  if (ap.progress <= 0) return 'Belum Mulai';
+  if (ap.progress <= 0) return 'Menunggu Respon';
   return 'Dalam Proses';
 }
-function execStatus(ap) {
-  if (ap.progress >= 100) return 'Selesai';
-  if (ap.targetDate && ap.targetDate < todayISO()) return 'Terlambat';
-  return baseStatus(ap);
+const execStatus = baseStatus;
+const isLate = ap => ap.progress < 100 && !!ap.targetDate && ap.targetDate < todayISO();
+const onHold = ap => ap.progress < 100 && ap.manualStatus === 'Menunggu Arahan';
+function statusMatch(ap, s) { return s === 'Terlambat' ? isLate(ap) : s === 'Menunggu Arahan' ? onHold(ap) : execStatus(ap) === s; }
+function statusFlags(ap, withVer = false) {
+  const f = [];
+  if (isLate(ap)) f.push(`<span class="flag-tag late" title="Target selesai ${fmtDate(ap.targetDate)} telah terlewati">${icon('alert', 'sm')}Terlambat</span>`);
+  if (onHold(ap)) f.push(`<span class="flag-tag hold" title="Satker menandai menunggu arahan pimpinan">${icon('clock', 'sm')}Menunggu Arahan</span>`);
+  if (withVer && ap.verificationStatus === 'Menunggu Verifikasi') f.push(`<span class="flag-tag ver" title="Update satker menunggu review MRDK">${icon('shield', 'sm')}Menunggu Verifikasi</span>`);
+  return f.join('');
 }
+const statusHTML = (ap, withVer = false) => `<span class="status-wrap">${badge(execStatus(ap))}${statusFlags(ap, withVer)}</span>`;
 const assignStatus = ap => ap.satker ? 'Sudah Ditugaskan' : 'Belum Ditugaskan';
 const daysToTarget = ap => ap.targetDate ? diffDays(ap.targetDate, todayISO()) : null;
 function pbar(ap) {
   const st = execStatus(ap);
-  const cls = st === 'Selesai' ? 'done' : st === 'Terlambat' ? 'late' : st === 'Menunggu Arahan' ? 'hold' : '';
+  const cls = st === 'Selesai' ? 'done' : isLate(ap) ? 'late' : onHold(ap) ? 'hold' : '';
   return `<div class="pbar"><div class="track"><div class="fill ${cls}" style="width:${ap.progress}%"></div></div><span class="val">${ap.progress}%</span></div>`;
 }
 function targetCell(ap) {
@@ -212,7 +221,9 @@ function computeKpis(plans = visiblePlans()) {
   let sum = 0;
   plans.forEach(a => {
     const s = execStatus(a);
-    if (s === 'Belum Mulai') k.belum++; else if (s === 'Dalam Proses') k.proses++; else if (s === 'Menunggu Arahan') k.arahan++; else if (s === 'Selesai') k.selesai++; else if (s === 'Terlambat') k.terlambat++;
+    if (s === 'Menunggu Respon') k.belum++; else if (s === 'Dalam Proses') k.proses++; else if (s === 'Selesai') k.selesai++;
+    if (onHold(a)) k.arahan++;
+    if (isLate(a)) k.terlambat++;
     if (a.verificationStatus === 'Menunggu Verifikasi') k.mv++;
     if (a.verificationStatus === 'Perlu Perbaikan') k.perbaikan++;
     if (a.verificationStatus === 'Ditolak') k.ditolak++;
@@ -250,13 +261,13 @@ const unreadCount = () => notifsForUser().filter(n => !n.readBy.includes(cu().us
 function scanOverdue() {
   let changed = false;
   appState.actionPlans.forEach(ap => {
-    if (execStatus(ap) === 'Terlambat' && !ap.overdueNotified) {
+    if (isLate(ap) && !ap.overdueNotified) {
       ap.overdueNotified = true; changed = true;
-      audit('Status Otomatis', ap.id, baseStatus(ap), 'Terlambat', `Target ${fmtDate(ap.targetDate)} terlewati dengan progress ${ap.progress}%`, { name: 'Sistem', role: 'system' });
+      audit('Status Otomatis', ap.id, baseStatus(ap), 'Label Terlambat', `Target ${fmtDate(ap.targetDate)} terlewati dengan progress ${ap.progress}%`, { name: 'Sistem', role: 'system' });
       const to = ['admin', 'viewer']; if (ap.satker) to.push('satker:' + ap.satker);
       notify(to, `${ap.id} telah melewati target penyelesaian (${fmtDate(ap.targetDate)}).`, 'late', { type: 'plan', id: ap.id });
     }
-    if (execStatus(ap) !== 'Terlambat' && ap.overdueNotified && ap.progress < 100 && ap.targetDate >= todayISO()) ap.overdueNotified = false;
+    if (!isLate(ap) && ap.overdueNotified && ap.progress < 100 && ap.targetDate >= todayISO()) ap.overdueNotified = false;
   });
   return changed;
 }
@@ -442,7 +453,7 @@ const NAV = [
 function navBadge(id) {
   const k = computeKpis();
   if (id === 'verification') return k.mv ? `<span class="nb hot">${k.mv}</span>` : '';
-  if (id === 'update' && isRole('satker')) { const n = visiblePlans().filter(a => canUpdate(a) && (a.verificationStatus === 'Perlu Perbaikan' || a.verificationStatus === 'Ditolak' || execStatus(a) === 'Terlambat' || a.progress === 0)).length; return n ? `<span class="nb hot">${n}</span>` : ''; }
+  if (id === 'update' && isRole('satker')) { const n = visiblePlans().filter(a => canUpdate(a) && (a.verificationStatus === 'Perlu Perbaikan' || a.verificationStatus === 'Ditolak' || isLate(a) || a.progress === 0)).length; return n ? `<span class="nb hot">${n}</span>` : ''; }
   if (id === 'documents') { const n = appState.documents.filter(d => d.ocr_status !== 'Selesai').length; return n ? `<span class="nb">${n}</span>` : ''; }
   if (id === 'ocr') { const n = appState.documents.filter(d => d.extraction_status === 'Perlu Review').length; return n ? `<span class="nb hot">${n}</span>` : ''; }
   if (id === 'trajectory') { const n = trajTodo().length; return n ? `<span class="nb hot">${n}</span>` : ''; }

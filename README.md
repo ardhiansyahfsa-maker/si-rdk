@@ -12,6 +12,11 @@ Aplikasi web statis (HTML, CSS, JavaScript) tanpa proses build.
 
 Catatan: data aplikasi tersimpan di localStorage browser masing-masing pengguna.
 
+## Status pelaksanaan
+Tiga status (selaras SI-RDK eksisting): **Menunggu Respon** (progres 0%), **Dalam Proses** (1–99%), **Selesai** (100%).
+Label penanda tambahan (bukan status): **Terlambat** (otomatis bila target terlewati dan progres < 100%),
+**Menunggu Arahan** (ditandai satker), **Menunggu Verifikasi** (update satker belum direview MRDK).
+
 ## Hak akses
 Tiga peran: **Admin MRDK** (`admin` / `admin123`), **Satker** (`satker` / `satker123` — DPUK; juga `satker.dpw1`, `satker.dlik`), **Pimpinan** (`viewer` / `viewer123`).
 

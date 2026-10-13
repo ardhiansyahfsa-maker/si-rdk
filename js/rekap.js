@@ -18,7 +18,8 @@ const rkVerified = (ap, D) => { const s = ap.submissions.filter(x => x.result ==
 const rkReported = (ap, D) => progressAt(ap, D);
 function rkPlan(ap, D) {
   const ver = rkVerified(ap, D), rep = rkReported(ap, D); const prog = ui.rekap.basis === 'verified' ? ver : rep;
-  const st = prog >= 100 ? 'Selesai' : ap.targetDate && ap.targetDate < D ? 'Terlambat' : prog <= 0 ? 'Belum Mulai' : 'Dalam Proses';
+  const st = prog >= 100 ? 'Selesai' : prog <= 0 ? 'Menunggu Respon' : 'Dalam Proses';
+  const late = prog < 100 && !!ap.targetDate && ap.targetDate < D;
   const pend = ap.submissions.some(s => tsDay(s.at) <= D && (!s.result || !s.resultAt || tsDay(s.resultAt) > D));
   let behind = false;
   const t = ap.traj;
@@ -27,13 +28,13 @@ function rkPlan(ap, D) {
     if (ended.length && prog < ended.at(-1).target) behind = true;
   }
   const q = quadOf(ap);
-  return { ap, ver, rep, prog, st, pend, behind, p12: q === 'P1' || q === 'P2', strat: !!ap.strategic };
+  return { ap, ver, rep, prog, st, late, pend, behind, p12: q === 'P1' || q === 'P2', strat: !!ap.strategic };
 }
 function rkAgg(items) {
   const n = items.length; const sum = k => items.reduce((a, x) => a + x[k], 0);
   return {
-    n, selesai: items.filter(x => x.st === 'Selesai').length, proses: items.filter(x => x.st === 'Dalam Proses').length, belum: items.filter(x => x.st === 'Belum Mulai').length,
-    late: items.filter(x => x.st === 'Terlambat').length, pend: items.filter(x => x.pend).length, behind: items.filter(x => x.behind).length,
+    n, selesai: items.filter(x => x.st === 'Selesai').length, proses: items.filter(x => x.st === 'Dalam Proses').length, belum: items.filter(x => x.st === 'Menunggu Respon').length,
+    late: items.filter(x => x.late).length, pend: items.filter(x => x.pend).length, behind: items.filter(x => x.behind).length,
     p12: items.filter(x => x.p12).length, strat: items.filter(x => x.strat).length,
     avg: n ? Math.round(sum('prog') / n) : 0, avgVer: n ? Math.round(sum('ver') / n) : 0, avgRep: n ? Math.round(sum('rep') / n) : 0, rate: n ? Math.round(items.filter(x => x.st === 'Selesai').length / n * 100) : 0
   };
@@ -54,7 +55,7 @@ function rekapData() {
 }
 
 const RK_COLS = [
-  ['n', 'Penugasan'], ['selesai', 'Selesai'], ['proses', 'Dalam Proses'], ['belum', 'Belum Mulai'], ['late', 'Terlambat'], ['pend', 'Menunggu Verifikasi'],
+  ['n', 'Penugasan'], ['selesai', 'Selesai'], ['proses', 'Dalam Proses'], ['belum', 'Menunggu Respon'], ['late', 'Label Terlambat'], ['pend', 'Menunggu Verifikasi'],
   ['avg', 'Rata-rata Progres'], ['avgRep', 'Rata-rata Dilaporkan'], ['behind', 'Tertinggal Trajectory'], ['p12', 'Prioritas P1–P2'], ['strat', 'Strategis (SI-GRC)']
 ];
 function rkCells(k, strong) {
@@ -102,13 +103,13 @@ registerPage('rekap', {
         ${kpi('Penugasan', T.n, `${d.groups.filter(g => g.items.length).length} bidang · ${new Set(d.items.map(x => x.ap.satker).filter(Boolean)).size} satker`, 'list', 'blue')}
         ${kpi(verified ? 'Selesai Terverifikasi' : 'Selesai (dilaporkan)', T.selesai, `${T.rate}% dari penugasan`, 'checkCircle', 'green')}
         ${kpi(verified ? 'Rata-rata Progres Terverifikasi' : 'Rata-rata Progres', T.avg + '%', verified ? `dilaporkan satker ${T.avgRep}% · selisih ${T.avgRep - T.avgVer} poin` : `terverifikasi ${T.avgVer}%`, 'target', 'teal')}
-        ${kpi('Terlambat', T.late, 'melewati target, belum 100%', 'alert', 'red')}
+        ${kpi('Berlabel Terlambat', T.late, 'target terlewati, belum 100%', 'alert', 'red')}
         ${kpi('Menunggu Verifikasi', T.pend, 'update belum direview MRDK', 'shield', 'amber')}
       </section>
       <section class="panel"><div class="panel-head"><div><h3>Rekap per Bidang dan Satuan Kerja</h3><div class="desc">Klik baris bidang untuk membuka/menutup · klik satker untuk melihat daftar penugasannya</div></div><div class="btn-group"><button class="btn xs ghost" data-act="rkAll" data-v="open">Buka semua</button><button class="btn xs ghost" data-act="rkAll" data-v="close">Tutup semua</button></div></div>
         <div class="tbl-wrap has-cards"><table class="rt cards"><thead>${head}</thead><tbody>${body}
           <tr style="background:var(--blue-50)"><td data-label=""><b>TOTAL OJK</b></td>${rkCells(T, true)}</tr></tbody></table></div>
-        <div class="small muted" style="padding:12px 18px">Status per tanggal posisi: <b>Selesai</b> = progres 100%; <b>Terlambat</b> = target selesai terlewati dan progres &lt; 100%; <b>Tertinggal Trajectory</b> = progres di bawah target TW terakhir pada trajectory yang disetujui. Kuadran prioritas & penanda strategis mengikuti penetapan terkini.</div>
+        <div class="small muted" style="padding:12px 18px">Status per tanggal posisi: <b>Menunggu Respon</b> = progres 0%; <b>Dalam Proses</b> = 1–99%; <b>Selesai</b> = 100%. Label <b>Terlambat</b> = target selesai terlewati dan progres &lt; 100% (dapat bersamaan dengan status mana pun selain Selesai); <b>Tertinggal Trajectory</b> = progres di bawah target TW terakhir pada trajectory yang disetujui. Kuadran prioritas & penanda strategis mengikuti penetapan terkini.</div>
       </section>
     </div>`;
   }
@@ -118,8 +119,8 @@ Exporters.rekap = () => {
   const d = rekapData(); const verified = ui.rekap.basis === 'verified';
   const basis = verified ? 'progres terverifikasi MRDK' : 'progres dilaporkan satker';
   const kc = [
-    { label: 'Penugasan', get: r => r.k.n, w: 11 }, { label: 'Selesai', get: r => r.k.selesai, w: 9 }, { label: 'Dalam Proses', get: r => r.k.proses, w: 12 }, { label: 'Belum Mulai', get: r => r.k.belum, w: 11 },
-    { label: 'Terlambat', get: r => r.k.late, w: 10 }, { label: 'Menunggu Verifikasi', get: r => r.k.pend, w: 18 },
+    { label: 'Penugasan', get: r => r.k.n, w: 11 }, { label: 'Selesai', get: r => r.k.selesai, w: 9 }, { label: 'Dalam Proses', get: r => r.k.proses, w: 12 }, { label: 'Menunggu Respon', get: r => r.k.belum, w: 15 },
+    { label: 'Label Terlambat', get: r => r.k.late, w: 14 }, { label: 'Menunggu Verifikasi', get: r => r.k.pend, w: 18 },
     { label: `Rata-rata Progres ${verified ? 'Terverifikasi' : 'Dilaporkan'} (%)`, get: r => r.k.avg, w: 26 }, ...(verified ? [{ label: 'Rata-rata Dilaporkan (%)', get: r => r.k.avgRep, w: 22 }] : []),
     { label: 'Completion Rate (%)', get: r => r.k.rate, w: 18 }, { label: 'Tertinggal Trajectory', get: r => r.k.behind, w: 18 }, { label: 'Prioritas P1–P2', get: r => r.k.p12, w: 14 }, { label: 'Strategis (SI-GRC)', get: r => r.k.strat, w: 16 }
   ];
@@ -134,7 +135,7 @@ Exporters.rekap = () => {
       { sheet: 'Rincian Penugasan', rows: d.items, columns: [
         { label: 'ID', get: x => x.ap.id, w: 13 }, { label: 'Bidang', get: x => bidangCode(x.ap.bidang), w: 8 }, { label: 'Satker', get: x => x.ap.satker, w: 40 }, { label: 'Poin Arahan', get: x => x.ap.arahan, w: 70 },
         { label: 'Tanggal RDK', get: x => x.ap.rdkDate, w: 12 }, { label: 'Target Selesai', get: x => x.ap.targetDate, w: 13 },
-        { label: 'Progres Terverifikasi (%)', get: x => x.ver, w: 14 }, { label: 'Progres Dilaporkan (%)', get: x => x.rep, w: 14 }, { label: 'Status (per posisi)', get: x => x.st, w: 14 },
+        { label: 'Progres Terverifikasi (%)', get: x => x.ver, w: 14 }, { label: 'Progres Dilaporkan (%)', get: x => x.rep, w: 14 }, { label: 'Status (per posisi)', get: x => x.st, w: 16 }, { label: 'Label Terlambat', get: x => x.late ? 'Ya' : '', w: 12 },
         { label: 'Menunggu Verifikasi', get: x => x.pend ? 'Ya' : '', w: 12 }, { label: 'Kuadran', get: x => quadOf(x.ap) || '', w: 9 }, { label: 'Tertinggal Trajectory', get: x => x.behind ? 'Ya' : '', w: 12 },
         { label: 'Strategis (SI-GRC)', get: x => x.strat ? 'Ya' : '', w: 12 }
       ] }

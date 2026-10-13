@@ -5,7 +5,7 @@
    opened, so "Terlambat" and "mendekati deadline" stay meaningful in demos.
    ========================================================================= */
 
-const SEED_VERSION = 14;
+const SEED_VERSION = 15;
 
 const ROLE_LABEL = { admin: 'Admin / MRDK', satker: 'Satker Pelaksana', viewer: 'Pimpinan' };
 
@@ -297,7 +297,7 @@ function buildSeed() {
     if (ap.progress < 100 && ap.targetDate < base) {
       ap.overdueNotified = true;
       const tOff = P[i][5];
-      log(T(tOff + 1, 0, 5), 'Sistem', 'system', 'Status Otomatis', ap.id, ap.progress > 0 ? 'Dalam Proses' : 'Belum Mulai', 'Terlambat', `Target ${fmtDate(ap.targetDate)} terlewati dengan progress ${ap.progress}%`);
+      log(T(tOff + 1, 0, 5), 'Sistem', 'system', 'Status Otomatis', ap.id, ap.progress > 0 ? 'Dalam Proses' : 'Menunggu Respon', 'Label Terlambat', `Target ${fmtDate(ap.targetDate)} terlewati dengan progress ${ap.progress}%`);
       ap._late = T(tOff + 1, 0, 5);
     }
   });

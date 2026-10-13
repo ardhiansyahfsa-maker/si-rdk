@@ -31,7 +31,7 @@ function logNarrative(l) {
     case 'Assignment': return `${u} menugaskan ${e} → ${esc(String(l.newValue).replace('Satker: ', ''))}`;
     case 'Upload Dokumen': return `${u} mengunggah ${e}`;
     case 'Ekstraksi Dokumen': return `Ekstraksi OCR/LLM ${e} selesai · ${esc(l.comment || l.newValue)}`;
-    case 'Status Otomatis': return `${e} berubah otomatis menjadi <b style="color:var(--danger-ink)">Terlambat</b>`;
+    case 'Status Otomatis': return `${e} otomatis diberi label <b style="color:var(--danger-ink)">Terlambat</b>`;
     case 'Update Status': return `${u} mengubah status ${e} menjadi ${esc(l.newValue)}`;
     case 'Simpan Draft': return `${u} menyimpan draft update ${e}`;
     case 'Hapus Dokumen': return `${u} menghapus dokumen ${esc(l.entity)}`;
