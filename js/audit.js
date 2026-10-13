@@ -6,10 +6,10 @@ function logColor(l) {
   if (l.action === 'Verifikasi') return l.newValue === 'Disetujui' ? 'green' : l.newValue === 'Ditolak' ? 'red' : 'violet';
   if (l.action === 'Status Otomatis' || l.action === 'Hapus Dokumen') return 'red';
   if (l.action === 'Submit Verifikasi') return 'amber';
-  if (l.action === 'Konfirmasi RQO (SI-GRC)' || l.action === 'Konfirmasi Prioritas') return 'green';
+  if (l.action === 'Konfirmasi RQO (SI-GRC)' || l.action === 'Konfirmasi Atensi') return 'green';
   if (l.action === 'Persetujuan Trajectory') return l.newValue === 'Disetujui' ? 'green' : 'violet';
-  if (['Penetapan Prioritas', 'Ajukan Trajectory'].includes(l.action)) return 'amber';
-  if (l.action === 'Usulan Penyesuaian Prioritas') return 'violet';
+  if (['Penetapan Atensi', 'Ajukan Trajectory'].includes(l.action)) return 'amber';
+  if (l.action === 'Usulan Penyesuaian Atensi') return 'violet';
   if (['Kirim ke SI-GRC', 'Tandai Strategis', 'Pengelompokan Risiko (SI-GRC)'].includes(l.action)) return 'violet';
   if (['Update Progress', 'Update Status', 'Upload Bukti', 'Simpan Draft'].includes(l.action)) return 'green';
   if (['Login', 'Logout', 'Export Data', 'Cetak Laporan'].includes(l.action)) return 'grey';
@@ -35,9 +35,9 @@ function logNarrative(l) {
     case 'Update Status': return `${u} mengubah status ${e} menjadi ${esc(l.newValue)}`;
     case 'Simpan Draft': return `${u} menyimpan draft update ${e}`;
     case 'Hapus Dokumen': return `${u} menghapus dokumen ${esc(l.entity)}`;
-    case 'Penetapan Prioritas': return `${u} menetapkan prioritas ${e}: <b>${esc(l.newValue)}</b>`;
-    case 'Konfirmasi Prioritas': return `${u} mengonfirmasi prioritas ${e} (${esc(l.comment)})`;
-    case 'Usulan Penyesuaian Prioritas': return `${u} mengajukan penyesuaian prioritas ${e}`;
+    case 'Penetapan Atensi': return `${u} mencatat kategori atensi ${e}: <b>${esc(l.newValue)}</b>`;
+    case 'Konfirmasi Atensi': return `${u} mengonfirmasi atribut atensi ${e} (${esc(l.comment)})`;
+    case 'Usulan Penyesuaian Atensi': return `${u} mengajukan koreksi atribut atensi ${e}`;
     case 'Ajukan Trajectory': return `${u} mengajukan trajectory ${e}`;
     case 'Persetujuan Trajectory': return `${u} ${l.newValue === 'Disetujui' ? 'menyetujui' : 'mengembalikan'} trajectory ${e}`;
     case 'Tandai Strategis': return `${u} ${l.newValue === 'Dicabut' ? 'mencabut tanda strategis' : 'menandai'} ${e}${l.newValue === 'Dicabut' ? '' : ' sebagai penugasan strategis OJK-wide'}`;

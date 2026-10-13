@@ -25,7 +25,7 @@ async function processDocument(doc, onStage, onLog) {
   log(`[ocr] Selesai · akurasi rata-rata ${ocr.accuracy}%`, true);
   const tx = await api.extractText(doc, p => onStage(2, p));
   log(`[text] Normalisasi teks, ${tx.paragraphs} paragraf, deteksi struktur "Pokok-pokok Arahan"`, true);
-  log('[llm] Skema keluaran: arahan_rdk.v2 (9 field + prioritas + usulan target)');
+  log('[llm] Skema keluaran: arahan_rdk.v2 (9 field + usulan atensi + usulan target)');
   let said = false;
   const items = await api.structureWithLLM(doc, p => { onStage(3, p); if (p > .55 && !said) { said = true; log('[llm] Memetakan bidang dan satker penanggung jawab ke master data'); } });
   log(`[llm] ${items.length} poin arahan teridentifikasi`, true);
@@ -307,7 +307,7 @@ function exItemHTML(it, i, edit, doc) {
       ${inp('respon', `<input class="input" id="ex-${i}-respon" value="${esc(it.respon)}">`)}
       ${inp('completedDate', `<input class="input" type="date" id="ex-${i}-completedDate" value="${esc(it.completedDate)}">`)}
       ${inp('tindakLanjut', `<textarea class="textarea" id="ex-${i}-tindakLanjut" style="min-height:60px">${esc(it.tindakLanjut)}</textarea>`)}
-      <div class="field"><label for="ex-${i}-priority">Prioritas</label><select class="select" id="ex-${i}-priority">${PRIORITIES.map(p => `<option ${p === it.priority ? 'selected' : ''}>${p}</option>`).join('')}</select></div>
+      <div class="field"><label for="ex-${i}-priority">Usulan atensi</label><select class="select" id="ex-${i}-priority">${PRIORITIES.map(p => `<option ${p === legacyAtensi(it.priority) ? 'selected' : ''}>${p}</option>`).join('')}</select></div>
       <div class="field"><label for="ex-${i}-targetDate">Usulan Target Selesai</label><input class="input" type="date" id="ex-${i}-targetDate" value="${esc(it.targetDate)}"></div>
     </div>`
     : `<dl class="dl-grid" style="margin:0">
@@ -316,7 +316,7 @@ function exItemHTML(it, i, edit, doc) {
       ${ro('bidang', esc(it.bidang || '—'))}${ro('satker', it.satker ? esc(it.satker) : '<span style="color:var(--warn-ink)">Belum teridentifikasi</span>')}
       ${ro('respon', esc(it.respon || '—'))}${ro('completedDate', fmtDate(it.completedDate))}
       ${ro('tindakLanjut', esc(it.tindakLanjut || '—'))}
-      <div class="dl"><dt>Prioritas (usulan)</dt><dd><span class="prio ${it.priority}">${it.priority.toUpperCase()}</span></dd></div>
+      <div class="dl"><dt>Atensi (usulan)</dt><dd>${prioTag(it.priority)}</dd></div>
       <div class="dl"><dt>Target selesai (usulan)</dt><dd>${fmtDate(it.targetDate)}</dd></div>
     </dl>`;
   const canSave = isRole('admin') && doc.extraction_status !== 'Tersimpan di Register';
@@ -436,7 +436,7 @@ Actions.exRegister = () => {
         const now = new Date().toISOString();
         appState.actionPlans.push({
           id, documentId: doc.document_id, documentName: doc.document_name, rdkDate: it.rdkDate, topic: it.topic, arahan: it.arahan,
-          bidang: it.bidang || (sat ? sat.bidang : ''), satker: it.satker || '', pic: sat ? sat.pic : '', priority: it.priority || 'Sedang', targetDate: it.targetDate,
+          bidang: it.bidang || (sat ? sat.bidang : ''), satker: it.satker || '', pic: sat ? sat.pic : '', priority: legacyAtensi(it.priority || 'Sedang'), targetDate: it.targetDate,
           progress: 0, manualStatus: null, tindakLanjut: '', output: '', kendala: '', catatan: '', completedDate: '',
           verificationStatus: 'Belum Diverifikasi', verificationNote: '', evidence: [], submissions: [], draft: null,
           updateDate: '', latestUpdate: '', createdAt: now, updatedAt: now, overdueNotified: false, extractedTindakLanjut: it.tindakLanjut

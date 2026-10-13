@@ -28,7 +28,7 @@ function rkPlan(ap, D) {
     if (ended.length && prog < ended.at(-1).target) behind = true;
   }
   const q = quadOf(ap);
-  return { ap, ver, rep, prog, st, late, pend, behind, p12: q === 'P1' || q === 'P2', strat: !!ap.strategic };
+  return { ap, ver, rep, prog, st, late, pend, behind, p12: q === 'AK' || q === 'AT', strat: !!ap.strategic };
 }
 function rkAgg(items) {
   const n = items.length; const sum = k => items.reduce((a, x) => a + x[k], 0);
@@ -56,7 +56,7 @@ function rekapData() {
 
 const RK_COLS = [
   ['n', 'Penugasan'], ['selesai', 'Selesai'], ['proses', 'Dalam Proses'], ['belum', 'Menunggu Respon'], ['late', 'Label Terlambat'], ['pend', 'Menunggu Verifikasi'],
-  ['avg', 'Rata-rata Progres'], ['avgRep', 'Rata-rata Dilaporkan'], ['behind', 'Tertinggal Trajectory'], ['p12', 'Prioritas P1–P2'], ['strat', 'Strategis (SI-GRC)']
+  ['avg', 'Rata-rata Progres'], ['avgRep', 'Rata-rata Dilaporkan'], ['behind', 'Tertinggal Trajectory'], ['p12', 'Atensi Khusus/Tinggi'], ['strat', 'Strategis (SI-GRC)']
 ];
 function rkCells(k, strong) {
   const v = (key, val) => {
@@ -109,7 +109,7 @@ registerPage('rekap', {
       <section class="panel"><div class="panel-head"><div><h3>Rekap per Bidang dan Satuan Kerja</h3><div class="desc">Klik baris bidang untuk membuka/menutup · klik satker untuk melihat daftar penugasannya</div></div><div class="btn-group"><button class="btn xs ghost" data-act="rkAll" data-v="open">Buka semua</button><button class="btn xs ghost" data-act="rkAll" data-v="close">Tutup semua</button></div></div>
         <div class="tbl-wrap has-cards"><table class="rt cards"><thead>${head}</thead><tbody>${body}
           <tr style="background:var(--blue-50)"><td data-label=""><b>TOTAL OJK</b></td>${rkCells(T, true)}</tr></tbody></table></div>
-        <div class="small muted" style="padding:12px 18px">Status per tanggal posisi: <b>Menunggu Respon</b> = progres 0%; <b>Dalam Proses</b> = 1–99%; <b>Selesai</b> = 100%. Label <b>Terlambat</b> = target selesai terlewati dan progres &lt; 100% (dapat bersamaan dengan status mana pun selain Selesai); <b>Tertinggal Trajectory</b> = progres di bawah target TW terakhir pada trajectory yang disetujui. Kuadran prioritas & penanda strategis mengikuti penetapan terkini.</div>
+        <div class="small muted" style="padding:12px 18px">Status per tanggal posisi: <b>Menunggu Respon</b> = progres 0%; <b>Dalam Proses</b> = 1–99%; <b>Selesai</b> = 100%. Label <b>Terlambat</b> = target selesai terlewati dan progres &lt; 100% (dapat bersamaan dengan status mana pun selain Selesai); <b>Tertinggal Trajectory</b> = progres di bawah target TW terakhir pada trajectory yang disetujui. Kategori atensi & penanda strategis mengikuti pencatatan terkini. ${ATENSI_NOTE}</div>
       </section>
     </div>`;
   }
@@ -122,7 +122,7 @@ Exporters.rekap = () => {
     { label: 'Penugasan', get: r => r.k.n, w: 11 }, { label: 'Selesai', get: r => r.k.selesai, w: 9 }, { label: 'Dalam Proses', get: r => r.k.proses, w: 12 }, { label: 'Menunggu Respon', get: r => r.k.belum, w: 15 },
     { label: 'Label Terlambat', get: r => r.k.late, w: 14 }, { label: 'Menunggu Verifikasi', get: r => r.k.pend, w: 18 },
     { label: `Rata-rata Progres ${verified ? 'Terverifikasi' : 'Dilaporkan'} (%)`, get: r => r.k.avg, w: 26 }, ...(verified ? [{ label: 'Rata-rata Dilaporkan (%)', get: r => r.k.avgRep, w: 22 }] : []),
-    { label: 'Completion Rate (%)', get: r => r.k.rate, w: 18 }, { label: 'Tertinggal Trajectory', get: r => r.k.behind, w: 18 }, { label: 'Prioritas P1–P2', get: r => r.k.p12, w: 14 }, { label: 'Strategis (SI-GRC)', get: r => r.k.strat, w: 16 }
+    { label: 'Completion Rate (%)', get: r => r.k.rate, w: 18 }, { label: 'Tertinggal Trajectory', get: r => r.k.behind, w: 18 }, { label: 'Atensi Khusus/Tinggi', get: r => r.k.p12, w: 14 }, { label: 'Strategis (SI-GRC)', get: r => r.k.strat, w: 16 }
   ];
   const combined = [];
   d.groups.filter(g => ui.rekap.showEmpty || g.items.length).forEach(g => { combined.push({ lvl: 'Bidang', code: g.code, name: g.name, k: g.k }); g.sats.filter(s => ui.rekap.showEmpty || s.items.length).forEach(s => combined.push({ lvl: 'Satker', code: s.key, name: s.name, bidang: g.code, k: s.k })); });
@@ -136,7 +136,7 @@ Exporters.rekap = () => {
         { label: 'Kode Bidang', get: x => bidangCode(x.ap.bidang) || '-', w: 11 }, { label: 'Bidang', get: x => x.ap.bidang || 'Belum ditetapkan', w: 45 }, { label: 'Kode Satker', get: x => satkerInfo(x.ap.satker)?.key || '-', w: 11 }, { label: 'Satker', get: x => x.ap.satker || 'Belum ditugaskan', w: 45 }, { label: 'ID', get: x => x.ap.id, w: 13 }, { label: 'Poin Arahan', get: x => x.ap.arahan, w: 70 },
         { label: 'Tanggal RDK', get: x => x.ap.rdkDate, w: 12 }, { label: 'Target Selesai', get: x => x.ap.targetDate, w: 13 },
         { label: 'Progres Terverifikasi (%)', get: x => x.ver, w: 14 }, { label: 'Progres Dilaporkan (%)', get: x => x.rep, w: 14 }, { label: 'Status (per posisi)', get: x => x.st, w: 16 }, { label: 'Label Terlambat', get: x => x.late ? 'Ya' : '', w: 12 },
-        { label: 'Status Verifikasi', get: x => x.ap.verificationStatus, w: 18 }, { label: 'Menunggu Verifikasi', get: x => x.pend ? 'Ya' : '', w: 12 }, { label: 'Kuadran', get: x => quadOf(x.ap) || '', w: 9 }, { label: 'Tertinggal Trajectory', get: x => x.behind ? 'Ya' : '', w: 12 },
+        { label: 'Status Verifikasi', get: x => x.ap.verificationStatus, w: 18 }, { label: 'Menunggu Verifikasi', get: x => x.pend ? 'Ya' : '', w: 12 }, { label: 'Kategori Atensi', get: x => quadOf(x.ap) ? QUADRANTS[quadOf(x.ap)].label : '', w: 18 }, { label: 'Tertinggal Trajectory', get: x => x.behind ? 'Ya' : '', w: 12 },
         { label: 'Strategis (SI-GRC)', get: x => x.strat ? 'Ya' : '', w: 12 }
       ] }
     ]

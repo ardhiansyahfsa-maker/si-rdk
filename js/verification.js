@@ -73,7 +73,7 @@ function openReview(id) {
     body: `<div class="grid" style="grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px" id="rv-grid">
       <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
         <div><div class="section-label" style="margin-bottom:8px">Arahan</div><div class="quote">${esc(ap.arahan)}</div>
-          <div class="small muted" style="margin-top:6px">${esc(ap.topic)} · RDK ${fmtDate(ap.rdkDate)} · prioritas ${ap.priority.toLowerCase()}</div></div>
+          <div class="small muted" style="margin-top:6px">${esc(ap.topic)} · RDK ${fmtDate(ap.rdkDate)} · atensi: ${esc(legacyAtensi(ap.priority).toLowerCase())}</div></div>
         <div class="cmp"><div class="side"><small>Sebelum</small><b>${s.progressFrom}%</b></div>${icon('arrowRight', 'lg')}<div class="side"><small>Diajukan</small><b style="color:var(--green-700)">${s.progressTo}%</b></div></div>
         <dl class="dl-grid" style="margin:0">
           ${field('Status', statusHTML(ap))}

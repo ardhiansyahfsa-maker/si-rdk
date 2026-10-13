@@ -28,7 +28,8 @@ function priorityScore(ap) {
   let score = 0; const why = [];
   if (isLate(ap)) { score += 1000 + (-d) * 4; why.push({ t: `Terlambat ${-d} hari`, c: 'red' }); }
   else if (d <= 21) { score += 600 + (21 - d) * 10; why.push({ t: d === 0 ? 'Deadline hari ini' : `Deadline ${d} hari lagi`, c: 'amber' }); }
-  if (ap.priority === 'Tinggi') { score += 200; why.push({ t: 'Prioritas tinggi', c: 'red' }); }
+  const atn = legacyAtensi(ap.priority);
+  if (atn === 'Atensi Khusus') { score += 260; why.push({ t: 'Atensi khusus', c: 'red' }); } else if (atn === 'Atensi Tinggi') { score += 200; why.push({ t: 'Atensi tinggi', c: 'red' }); }
   const last = ap.updateDate || ap.createdAt.slice(0, 10);
   const since = diffDays(todayISO(), last);
   if (!ap.updateDate) { score += 140; why.push({ t: 'Belum ada update', c: 'grey' }); }
@@ -57,10 +58,10 @@ function riskPanel(k, plans) {
 
 function priorityList(plans, n = 6) {
   const top = topPriority(plans, n);
-  if (!top.length) return `<div class="empty"><b>Tidak ada action prioritas</b>Seluruh rencana aksi berjalan sesuai target.</div>`;
+  if (!top.length) return `<div class="empty"><b>Tidak ada penugasan yang perlu perhatian segera</b>Seluruh rencana aksi berjalan sesuai target.</div>`;
   return `<div class="prio-list">${top.map((x, i) => `<button class="prio-item" data-act="openPlan" data-id="${x.a.id}">
     <span class="rank">${i + 1}</span>
-    <span style="min-width:0"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="mono" style="color:var(--blue-700);font-weight:600">${x.a.id}</span>${statusHTML(x.a)}${quadOf(x.a) ? quadBadge(quadOf(x.a)) : `<span class="prio ${x.a.priority}">${x.a.priority.toUpperCase()}</span>`}</div>
+    <span style="min-width:0"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="mono" style="color:var(--blue-700);font-weight:600">${x.a.id}</span>${statusHTML(x.a)}${quadOf(x.a) ? quadBadge(quadOf(x.a)) : prioTag(x.a.priority)}</div>
       <div class="clamp-1" style="margin-top:3px">${esc(x.a.arahan)}</div>
       <div class="small muted">${esc(x.a.satker || 'Belum ditugaskan')} · target ${fmtDate(x.a.targetDate)}</div></span>
     <span style="text-align:right;display:flex;flex-direction:column;gap:2px;align-items:flex-end">${x.p.why.slice(0, 2).map(w => `<span class="why ${w.c} nowrap">${esc(w.t)}</span>`).join('')}</span></button>`).join('')}</div>`;
@@ -234,25 +235,18 @@ function bidangStats(plans) {
     const list = plans.filter(a => a.bidang === b.name); const k = computeKpis(list);
     const ver = list.length ? Math.round(list.reduce((t, a) => t + rkVerified(a, today), 0) / list.length) : 0;
     const verDone = list.filter(a => rkVerified(a, today) >= 100).length;
-    return { ...b, list, k, ver, verDone, behind: list.filter(a => trackStatus(a)?.st === 'Tertinggal').length, p12: list.filter(a => ['P1', 'P2'].includes(quadOf(a))).length, strat: list.filter(a => a.strategic).length };
+    return { ...b, list, k, ver, verDone, behind: list.filter(a => trackStatus(a)?.st === 'Tertinggal').length, p12: list.filter(a => ['AK', 'AT'].includes(quadOf(a))).length, strat: list.filter(a => a.strategic).length };
   });
 }
 function bidangTable(rows) {
-  return `<div class="tbl-wrap has-cards"><table class="rt cards"><thead><tr><th>Bidang</th><th class="num">Penugasan</th><th class="num">Selesai</th><th class="num">Dalam Proses</th><th class="num">Menunggu Respon</th><th class="num">Terlambat</th><th>Progres Terverifikasi <span class="muted" style="font-weight:400">(dilaporkan)</span></th><th class="num">Tertinggal Trajectory</th><th class="num">P1–P2</th><th class="num">Strategis</th></tr></thead><tbody>
+  return `<div class="tbl-wrap has-cards"><table class="rt cards"><thead><tr><th>Bidang</th><th class="num">Penugasan</th><th class="num">Selesai</th><th class="num">Dalam Proses</th><th class="num">Menunggu Respon</th><th class="num">Terlambat</th><th>Progres Terverifikasi <span class="muted" style="font-weight:400">(dilaporkan)</span></th><th class="num">Tertinggal Trajectory</th><th class="num">Atensi Khusus/Tinggi</th><th class="num">Strategis</th></tr></thead><tbody>
     ${rows.map(b => `<tr class="clickable" tabindex="0" data-act="kpi" data-f="bidang:${esc(b.name)}">
       <td data-label="Bidang" class="full"><b style="font-weight:650">${esc(b.code)}</b><div class="small muted clamp-2" style="min-width:190px;max-width:260px">${esc(b.name)}</div></td>
       <td class="num tnum" data-label="Penugasan"><b>${b.k.total}</b></td><td class="num tnum" data-label="Selesai">${b.k.selesai}</td><td class="num tnum" data-label="Dalam Proses">${b.k.proses}</td><td class="num tnum" data-label="Menunggu Respon">${b.k.belum}</td>
       <td class="num tnum" data-label="Label Terlambat" style="${b.k.terlambat ? 'color:var(--danger-ink);font-weight:650' : ''}">${b.k.terlambat}</td>
       <td data-label="Terverifikasi"><div class="pbar"><div class="track"><div class="fill ${b.ver >= 75 ? 'done' : ''}" style="width:${b.ver}%"></div></div><span class="val">${b.ver}%</span></div><div class="small muted tnum">dilaporkan ${b.k.avg}%</div></td>
-      <td class="num tnum" data-label="Tertinggal" style="${b.behind ? 'color:var(--danger-ink);font-weight:650' : ''}">${b.behind}</td><td class="num tnum" data-label="P1–P2">${b.p12}</td><td class="num tnum" data-label="Strategis">${b.strat}</td></tr>`).join('')}
+      <td class="num tnum" data-label="Tertinggal" style="${b.behind ? 'color:var(--danger-ink);font-weight:650' : ''}">${b.behind}</td><td class="num tnum" data-label="Atensi Khusus/Tinggi">${b.p12}</td><td class="num tnum" data-label="Strategis">${b.strat}</td></tr>`).join('')}
   </tbody></table></div>`;
-}
-function execMatrix(plans) {
-  const cell = (u, d) => { const q = quadrantOf(u, d); const n = plans.filter(a => a.cls && a.cls.urgency === u && a.cls.impact === d).length; const bg = { P1: 'var(--danger-50)', P2: 'var(--warn-50)', P3: 'var(--blue-50)', P4: 'var(--grey-50)' }[q];
-    return `<button data-act="kpi" data-f="quad:${q}" style="border:1px solid var(--line);background:${bg};border-radius:8px;padding:6px 4px;text-align:center;cursor:pointer"><div style="font-size:18px;font-weight:700;color:var(--navy)" class="tnum">${n}</div><div class="small muted">${q}</div></button>`; };
-  return `<div style="display:grid;grid-template-columns:auto repeat(3,1fr);gap:5px">
-    <div></div>${LEVELS.slice().reverse().map(u => `<div class="small muted" style="text-align:center;font-weight:600">U ${u}</div>`).join('')}
-    ${LEVELS.map(d => `<div class="small muted" style="font-weight:600;display:flex;align-items:center;padding-right:4px">D ${d}</div>${LEVELS.slice().reverse().map(u => cell(u, d)).join('')}`).join('')}</div>`;
 }
 const miniStat = (label, n, f, tone = '') => `<button class="risk-row" data-act="kpi" data-f="${esc(f)}" style="grid-template-columns:1fr auto;padding:9px 0"><span class="small">${label}</span><b class="tnum" style="font-size:16px;${tone}">${n}</b></button>`;
 
@@ -265,12 +259,12 @@ registerPage('executive', {
     const verAvg = plans.length ? Math.round(plans.reduce((t, a) => t + rkVerified(a, today), 0) / plans.length) : 0;
     const tr = s => plans.filter(a => trackStatus(a)?.st === s).length; const approved = plans.filter(a => prepStatus(a) === 'Trajectory Disetujui').length;
     const prep = plans.filter(a => !['Trajectory Disetujui'].includes(prepStatus(a))).length;
-    const p1Behind = plans.filter(a => quadOf(a) === 'P1' && trackStatus(a)?.st === 'Tertinggal');
+    const p1Behind = plans.filter(a => quadOf(a) === 'AK' && trackStatus(a)?.st === 'Tertinggal');
     const strat = plans.filter(a => a.strategic); const gs = s => strat.filter(a => grcStatus(a) === s).length;
     const highRec = strat.filter(a => a.grc?.recorded?.level === 'Tinggi' && grcStatus(a) === 'Selesai').length;
     return `<div class="page">
       <div class="page-head"><div><div class="crumb">Monitoring · Executive Dashboard</div><h1>Executive Dashboard</h1><div class="sub">Ringkasan untuk pimpinan per ${fmtDateLong(today)}. Angka progres <b>terverifikasi</b> = update terakhir yang disetujui MRDK.</div></div>
-        <div class="btn-group"><button class="btn primary sm" data-act="briefPDF" title="Laporan ringkas untuk Dewan Komisioner: status, perhatian, sumber arahan, prioritas">${icon('file')}Laporan PDF untuk DK</button>${exportButtons('rekap')}</div></div>
+        <div class="btn-group"><button class="btn primary sm" data-act="briefPDF" title="Laporan ringkas untuk Dewan Komisioner: status, perhatian, sumber arahan, kategori atensi">${icon('file')}Laporan PDF untuk DK</button>${exportButtons('rekap')}</div></div>
       <section class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
         <div class="kpi big t-blue static"><div class="k-label">Total Arahan RDK <span class="k-ic">${icon('flag', 'sm')}</span></div><div class="k-val">${k.sessions}</div><div class="k-sub">${k.total} penugasan · ${k.docs} dokumen rujukan</div></div>
         ${kpiCard({ label: 'Selesai Terverifikasi', value: verDone, sub: `${k.selesai} dilaporkan selesai oleh satker`, ic: 'checkCircle', tone: 'green', f: 'status:Selesai' })}
@@ -281,18 +275,18 @@ registerPage('executive', {
       </section>
       <section class="grid g-12-8">
         <div class="panel"><div class="panel-head"><div><h3>Risk / Attention Required</h3><div class="desc">Hal yang memerlukan perhatian pimpinan</div></div></div>${riskPanel(k, plans)}</div>
-        <div class="panel"><div class="panel-head"><div><h3>Top Priority Action</h3><div class="desc">Urutan: terlambat → mendekati deadline → prioritas tinggi → belum ada update</div></div></div>${priorityList(plans, 7)}</div>
+        <div class="panel"><div class="panel-head"><div><h3>Penugasan Perlu Perhatian Segera</h3><div class="desc">Urutan: terlambat → mendekati deadline → atensi khusus/tinggi → belum ada update</div></div></div>${priorityList(plans, 7)}</div>
       </section>
       <section class="grid g-12-8">
         <div class="panel"><div class="panel-head"><h3>Status Pelaksanaan</h3></div><div class="panel-body"><div class="chart-box short"><canvas id="ex-donut"></canvas><div class="donut-center"><div><b>${k.rate}%</b><span>selesai</span></div></div></div><div class="legend" id="ex-legend"></div></div></div>
         <div class="panel"><div class="panel-head"><div><h3>Status per Bidang</h3><div class="desc">Jumlah penugasan per status di 9 bidang · klik batang untuk membuka</div></div></div><div class="panel-body"><div class="chart-box"><canvas id="ex-bidang"></canvas></div></div></div>
       </section>
-      <section class="panel"><div class="panel-head"><div><h3>Kinerja per Bidang</h3><div class="desc">Progres terverifikasi vs dilaporkan, keterlambatan, trajectory, prioritas, dan penugasan strategis · klik baris untuk melihat penugasan</div></div><button class="btn xs ghost" data-act="go" data-route="rekap">Rekap lengkap ${icon('chevRight', 'sm')}</button></div>${bidangTable(bstats)}</section>
+      <section class="panel"><div class="panel-head"><div><h3>Kinerja per Bidang</h3><div class="desc">Progres terverifikasi vs dilaporkan, keterlambatan, trajectory, kategori atensi, dan penugasan strategis · klik baris untuk melihat penugasan</div></div><button class="btn xs ghost" data-act="go" data-route="rekap">Rekap lengkap ${icon('chevRight', 'sm')}</button></div>${bidangTable(bstats)}</section>
       <section class="grid g-3">
-        <div class="panel"><div class="panel-head"><div><h3>Matriks Prioritas</h3><div class="desc">Urgensi × dampak · ${plans.filter(a => !a.cls).length} belum ditetapkan</div></div></div><div class="panel-body">${execMatrix(plans)}</div></div>
+        <div class="panel"><div class="panel-head"><div><h3>Matriks Atensi Pemantauan</h3><div class="desc">Horizon × cakupan · klik sel untuk membuka</div></div></div><div class="panel-body">${matrixHTML(plans, 'kpi')}</div></div>
         <div class="panel"><div class="panel-head"><div><h3>Posisi Trajectory</h3><div class="desc">${approved} dari ${plans.length} penugasan memiliki trajectory disetujui</div></div></div><div class="panel-body" style="padding-top:4px">
           ${miniStat('Tertinggal dari target TW', tr('Tertinggal'), 'traj:Tertinggal', 'color:var(--danger-ink)')}${miniStat('Sesuai trajectory', tr('Sesuai Trajectory'), 'traj:Sesuai Trajectory', 'color:var(--success-ink)')}${miniStat('Selesai', tr('Selesai'), 'traj:Selesai')}${miniStat('Belum memiliki trajectory disetujui', prep, 'goto:trajectory', 'color:var(--warn-ink)')}
-          ${p1Behind.length ? `<div class="ai-banner red" style="margin-top:10px">${icon('alert')}<span><b>P1 tertinggal:</b> ${p1Behind.map(a => `<button class="link-btn mono" data-act="openPlan" data-id="${a.id}">${a.id}</button>`).join(', ')}</span></div>` : ''}</div></div>
+          ${p1Behind.length ? `<div class="ai-banner red" style="margin-top:10px">${icon('alert')}<span><b>Atensi Khusus tertinggal:</b> ${p1Behind.map(a => `<button class="link-btn mono" data-act="openPlan" data-id="${a.id}">${a.id}</button>`).join(', ')}</span></div>` : ''}</div></div>
         <div class="panel"><div class="panel-head"><div><h3>Integrasi SI-GRC</h3><div class="desc">${strat.length} penugasan strategis OJK-wide</div></div></div><div class="panel-body" style="padding-top:4px">
           ${miniStat('Tercatat di profil risiko (selesai)', gs('Selesai'), 'grc:Selesai', 'color:var(--success-ink)')}${miniStat('Diproses di SI-GRC', gs('Menunggu Pengelompokan Risiko') + gs('Menunggu Konfirmasi RQO'), 'goto:grc')}${miniStat('Siap / perlu dikirim', gs('Siap Dikirim') + gs('Perlu Sinkron Ulang'), 'grc:Siap Dikirim', 'color:var(--warn-ink)')}${miniStat('Tercatat level risiko Tinggi', highRec, 'grc:Selesai', 'color:var(--danger-ink)')}</div></div>
       </section>

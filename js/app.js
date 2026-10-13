@@ -151,7 +151,10 @@ const EXEC_STATUSES = ['Menunggu Respon', 'Dalam Proses', 'Selesai'];
 const STATUS_FILTERS = [...EXEC_STATUSES, 'Terlambat', 'Menunggu Arahan'];
 const VER_STATUSES = ['Belum Diverifikasi', 'Menunggu Verifikasi', 'Disetujui', 'Ditolak', 'Perlu Perbaikan'];
 const ASSIGN_STATUSES = ['Sudah Ditugaskan', 'Belum Ditugaskan'];
-const PRIORITIES = ['Tinggi', 'Sedang', 'Rendah'];
+const PRIORITIES = ['Atensi Khusus', 'Atensi Tinggi', 'Pemantauan Reguler'];
+/** Kategori atensi (bukan tingkat kepentingan arahan). Nilai lama Tinggi/Sedang/Rendah dipetakan agar data lama tetap terbaca. */
+const legacyAtensi = p => PRIORITIES.includes(p) ? p : p === 'Tinggi' ? 'Atensi Tinggi' : 'Pemantauan Reguler';
+const prioTag = p => { const v = legacyAtensi(p); const c = { 'Atensi Khusus': 'Tinggi', 'Atensi Tinggi': 'Sedang', 'Pemantauan Reguler': 'Rendah' }[v]; return `<span class="prio ${c}">${esc(v.toUpperCase())}</span>`; };
 const STATUS_COLOR = { 'Selesai': '#2EAD6B', 'Dalam Proses': '#2986B8', 'Menunggu Respon': '#A7B4C1', 'Menunggu Arahan': '#F5A623', 'Terlambat': '#D9534F' };
 const BADGE_CLASS = {
   'Menunggu Respon': 'b-grey', 'Dalam Proses': 'b-blue', 'Menunggu Arahan': 'b-amber', 'Selesai': 'b-green', 'Terlambat': 'b-red',
@@ -443,7 +446,7 @@ const PAGE_ACCESS = {
 const canSee = r => (PAGE_ACCESS[r] || []).includes(cu().role);
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
-  { group: 'Monitoring', items: [{ id: 'executive', label: 'Executive Dashboard', icon: 'gauge' }, { id: 'register', label: 'Rencana Aksi', icon: 'list' }, { id: 'trajectory', label: 'Prioritas & Trajectory', icon: 'target' }, { id: 'satker', label: 'Progress Satker', icon: 'bars' }, { id: 'rekap', label: 'Rekap & Laporan', icon: 'sheet' }] },
+  { group: 'Monitoring', items: [{ id: 'executive', label: 'Executive Dashboard', icon: 'gauge' }, { id: 'register', label: 'Rencana Aksi', icon: 'list' }, { id: 'trajectory', label: 'Atensi & Trajectory', icon: 'target' }, { id: 'satker', label: 'Progress Satker', icon: 'bars' }, { id: 'rekap', label: 'Rekap & Laporan', icon: 'sheet' }] },
   { group: 'Dokumen', items: [{ id: 'documents', label: 'Dokumen Rujukan', icon: 'file' }, { id: 'ocr', label: 'OCR & Extraction', icon: 'scan' }, { id: 'dataregister', label: 'Register', icon: 'database' }] },
   { group: 'Pelaksanaan', items: [{ id: 'update', label: 'Update Satker', icon: 'pencil' }] },
   { group: 'Verifikasi', items: [{ id: 'verification', label: 'Verifikasi Admin', icon: 'shield' }] },

@@ -17,7 +17,7 @@ const PLAN_COLS = {
   progress: { label: 'Progress', sort: 'progress', cell: a => pbar(a) },
   target: { label: 'Target Selesai', sort: 'targetDate', cell: a => targetCell(a) },
   ver: { label: 'Status Verifikasi', sort: 'verificationStatus', cell: a => badge(a.verificationStatus) },
-  prio: { label: 'Prioritas', sort: 'priority', cell: a => `<span class="prio ${a.priority}">${a.priority.toUpperCase()}</span>` },
+  prio: { label: 'Atensi', sort: 'priority', cell: a => prioTag(a.priority) },
   update: { label: 'Last Update', sort: 'updateDate', cell: a => a.updateDate ? `<span class="nowrap tnum">${fmtDate(a.updateDate)}</span>` : '<span class="muted">Belum ada</span>' },
   action: { label: 'Action', cell: a => `<div class="btn-group" style="flex-wrap:nowrap;gap:4px"><button class="btn xs" data-act="openPlan" data-id="${a.id}">${icon('eye', 'sm')}Detail</button>${canUpdate(a) ? `<button class="btn xs green" data-act="openUpdate" data-id="${a.id}">Update</button>` : ''}${isRole('admin') ? `<button class="btn xs ghost" data-act="assignPlan" data-id="${a.id}" title="Ubah penugasan">${icon('users', 'sm')}</button>` : ''}</div>` },
   updAction: { label: 'Action', cell: a => updateActionCell(a) }
@@ -80,7 +80,7 @@ function sortPlans(plans, sort) {
 function regRows() { return sortPlans(filterPlans(visiblePlans(), ui.reg), ui.reg.sort); }
 const optList = (vals, cur, all) => `<option value="">${all}</option>` + (cur && !vals.includes(cur) ? `<option value="${esc(cur)}" selected>${esc(cur.split(',').join(' / '))}</option>` : '') + vals.map(v => `<option ${v === cur ? 'selected' : ''}>${esc(v)}</option>`).join('');
 function regChips() {
-  const f = ui.reg; const L = { q: 'Kata kunci', status: 'Status', ver: 'Verifikasi', assign: 'Penugasan', satker: 'Satker', bidang: 'Bidang', priority: 'Prioritas', strat: 'Klasifikasi', rdkFrom: 'RDK dari', rdkTo: 'RDK s.d.', targetTo: 'Target s.d.', prog: 'Progress', near: 'Deadline ≤' };
+  const f = ui.reg; const L = { q: 'Kata kunci', status: 'Status', ver: 'Verifikasi', assign: 'Penugasan', satker: 'Satker', bidang: 'Bidang', priority: 'Atensi', strat: 'Klasifikasi', rdkFrom: 'RDK dari', rdkTo: 'RDK s.d.', targetTo: 'Target s.d.', prog: 'Progress', near: 'Deadline ≤' };
   const chips = Object.keys(L).filter(k => f[k]).map(k => {
     let v = f[k]; if (['rdkFrom', 'rdkTo', 'targetTo'].includes(k)) v = fmtDate(v); if (k === 'near') v = v + ' hari'; if (k === 'prog') v = v + '%'; if (typeof v === 'string') v = v.split(',').join(' / ');
     return `<span class="chip">${esc(L[k])}: <b>${esc(v)}</b><button data-act="regClear" data-k="${k}" aria-label="Hapus filter ${esc(L[k])}">${icon('x', 'sm')}</button></span>`;
@@ -121,7 +121,7 @@ registerPage('register', {
           <div class="field"><label for="rf-assign">Status penugasan</label><select class="select sm" id="rf-assign" data-change="regFilter">${optList(ASSIGN_STATUSES, f.assign, 'Semua')}</select></div>
           <div class="field"><label for="rf-prog">Progress</label><select class="select sm" id="rf-prog" data-change="regFilter"><option value="">Semua</option>${[['0', '0% (belum mulai)'], ['1-49', '1–49%'], ['50-99', '50–99%'], ['100', '100%']].map(([v, l]) => `<option value="${v}" ${f.prog === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
           <div class="field"><label for="rf-targetTo">Target selesai s.d.</label><input class="input sm" type="date" id="rf-targetTo" value="${esc(f.targetTo)}" data-change="regFilter"></div>
-          <div class="field"><label for="rf-priority">Prioritas</label><select class="select sm" id="rf-priority" data-change="regFilter">${optList(PRIORITIES, f.priority, 'Semua')}</select></div>
+          <div class="field"><label for="rf-priority">Kategori atensi</label><select class="select sm" id="rf-priority" data-change="regFilter">${optList(PRIORITIES, f.priority, 'Semua')}</select></div>
           <div class="field"><label for="rf-strat">Klasifikasi</label><select class="select sm" id="rf-strat" data-change="regFilter">${optList(['Strategis (SI-GRC)', 'Non-strategis'], f.strat, 'Semua')}</select></div>
           <div class="field"><label>Sesi RDK</label><select class="select sm" data-change="regRdk" aria-label="Pilih sesi RDK"><option value="">Pilih tanggal…</option>${rdkDates.map(d => `<option value="${d}" ${f.rdkFrom === d && f.rdkTo === d ? 'selected' : ''}>${fmtDate(d)}</option>`).join('')}</select></div>
         </div>
@@ -147,7 +147,7 @@ const PLAN_EXPORT_COLS = [
   { label: 'ID', get: a => a.id, w: 13 }, { label: 'Tanggal RDK', get: a => a.rdkDate, w: 12 }, { label: 'Topik RDK', get: a => a.topic, w: 36 },
   { label: 'Poin Arahan', get: a => a.arahan, w: 70 }, { label: 'Bidang', get: a => a.bidang, w: 28 }, { label: 'Satker', get: a => a.satker, w: 40 }, { label: 'PIC', get: a => a.pic, w: 16 },
   { label: 'Status Penugasan', get: a => assignStatus(a), w: 16 }, { label: 'Status Pelaksanaan', get: a => execStatus(a), w: 16 }, { label: 'Label', get: a => [isLate(a) ? 'Terlambat' : '', onHold(a) ? 'Menunggu Arahan' : ''].filter(Boolean).join(', '), w: 18 }, { label: 'Progress (%)', get: a => a.progress, w: 10 },
-  { label: 'Prioritas', get: a => a.priority, w: 9 }, { label: 'Target Selesai', get: a => a.targetDate, w: 13 }, { label: 'Status Verifikasi', get: a => a.verificationStatus, w: 18 },
+  { label: 'Kategori Atensi', get: a => legacyAtensi(a.priority), w: 18 }, { label: 'Target Selesai', get: a => a.targetDate, w: 13 }, { label: 'Status Verifikasi', get: a => a.verificationStatus, w: 18 },
   { label: 'Catatan Verifikasi', get: a => a.verificationNote, w: 40 }, { label: 'Tindak Lanjut', get: a => a.tindakLanjut, w: 50 }, { label: 'Output', get: a => a.output, w: 36 },
   { label: 'Kendala', get: a => a.kendala, w: 36 }, { label: 'Tanggal Update', get: a => a.updateDate, w: 13 }, { label: 'Tanggal Selesai', get: a => a.completedDate, w: 13 },
   { label: 'Jumlah Bukti', get: a => a.evidence.length, w: 10 }, { label: 'Sumber Dokumen', get: a => a.documentName, w: 50 }
@@ -216,7 +216,7 @@ function renderPlanDetail(ap) {
     ? `<div class="ai-banner ${ap.verificationStatus === 'Disetujui' ? 'ok' : ap.verificationStatus === 'Ditolak' ? 'red' : 'violet'}" style="margin-top:12px">${icon(ap.verificationStatus === 'Disetujui' ? 'checkCircle' : 'undo')}<span><b>Catatan verifikasi:</b> ${esc(ap.verificationNote)}</span></div>` : '';
   const kv = (k, v) => `<dt>${k}</dt><dd>${v}</dd>`;
   return `<div class="drawer-head">
-      <div class="row"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="mono" style="font-weight:600;color:var(--blue-700);font-size:13px">${ap.id}</span>${statusHTML(ap)}${badge(ap.verificationStatus)}<span class="prio ${ap.priority}">PRIORITAS ${ap.priority.toUpperCase()}</span></div>
+      <div class="row"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="mono" style="font-weight:600;color:var(--blue-700);font-size:13px">${ap.id}</span>${statusHTML(ap)}${badge(ap.verificationStatus)}${prioTag(ap.priority)}</div>
         <button class="icon-btn" data-act="closeDrawer" aria-label="Tutup detail">${icon('x')}</button></div>
       <h2>${esc(ap.arahan)}</h2>
       <div class="small muted">${esc(ap.topic)}</div>
@@ -289,7 +289,7 @@ Actions.assignPlan = el => {
       <div class="field span-2"><label for="as-satker">Satker penanggung jawab</label><select class="select" id="as-satker"><option value="">— Belum ditugaskan —</option>${sats.map(s => `<option ${s.name === ap.satker ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
       <div class="field"><label for="as-bidang">Bidang</label><select class="select" id="as-bidang"><option value="">— Belum ditetapkan —</option>${bidangs.map(b => `<option ${b === ap.bidang ? 'selected' : ''}>${esc(b)}</option>`).join('')}</select></div>
       <div class="field"><label for="as-pic">PIC</label><input class="input" id="as-pic" value="${esc(ap.pic)}"></div>
-      <div class="field"><label for="as-priority">Prioritas</label><select class="select" id="as-priority" ${ap.cls ? 'disabled title="Ditentukan dari matriks urgensi × dampak"' : ''}>${PRIORITIES.map(p => `<option ${p === ap.priority ? 'selected' : ''}>${p}</option>`).join('')}</select>${ap.cls ? `<div class="small muted" style="margin-top:4px">Mengikuti ${QUADRANTS[quadOf(ap)].label} — ubah melalui Prioritas & Trajectory</div>` : ''}</div>
+      <div class="field"><label for="as-priority">Kategori atensi</label><select class="select" id="as-priority" ${ap.cls ? 'disabled title="Diturunkan dari atribut horizon × cakupan"' : ''}>${PRIORITIES.map(p => `<option ${p === ap.priority ? 'selected' : ''}>${p}</option>`).join('')}</select>${ap.cls ? `<div class="small muted" style="margin-top:4px">Mengikuti ${QUADRANTS[quadOf(ap)].label} — ubah melalui Atensi & Trajectory</div>` : ''}</div>
       <div class="field"><label for="as-target">Target selesai <span class="req">*</span></label><input class="input" type="date" id="as-target" value="${esc(ap.targetDate)}"></div>
       <div class="field span-2"><label for="as-note">Catatan penugasan</label><textarea class="textarea" id="as-note" style="min-height:60px" placeholder="Opsional — dicatat di audit trail"></textarea></div>
     </div>`,
@@ -302,7 +302,7 @@ Actions.assignPlan = el => {
       if (satker !== ap.satker) changes.push(['Assignment', `Satker: ${ap.satker || '-'}`, `Satker: ${satker || '-'}`]);
       if (bidang !== ap.bidang) changes.push(['Ubah Bidang', ap.bidang || '-', bidang || '-']);
       if (pic !== ap.pic) changes.push(['Ubah PIC', ap.pic || '-', pic || '-']);
-      if (priority !== ap.priority) changes.push(['Ubah Prioritas', ap.priority, priority]);
+      if (priority !== ap.priority) changes.push(['Ubah Atensi', ap.priority, priority]);
       if (target !== ap.targetDate) changes.push(['Ubah Target', fmtDate(ap.targetDate), fmtDate(target)]);
       if (!changes.length) { m.close(); return toast('Tidak ada perubahan.', 'info'); }
       confirmDialog({ title: 'Simpan perubahan penugasan?', message: `${changes.length} perubahan akan dicatat di audit trail.${satker !== ap.satker && satker ? ` Satker <b>${esc(satker)}</b> akan menerima notifikasi.` : ''}`, confirmLabel: 'Simpan', onConfirm: () => {

@@ -5,7 +5,7 @@
      1. Status penugasan (2 status untuk DK: Dalam Proses · Selesai)
      2. Perhatian: mendekati jatuh tempo, terlambat, tertinggal trajectory
      3. Pemisahan sumber: Arahan RDK/DK vs Hasil Rapat dengan Komisi XI
-     4. Statistik prioritas & daftar P1 (Kritis) dan P2 (Tinggi)
+     4. Statistik kategori atensi & daftar Atensi Khusus dan Atensi Tinggi
    ========================================================================= */
 
 const BRIEF_NEAR_DAYS = 30;
@@ -39,7 +39,7 @@ async function exportBriefPDF() {
   const late = plans.filter(isLate).sort((a, b) => a.targetDate.localeCompare(b.targetDate));
   const behind = plans.filter(a => trackStatus(a)?.st === 'Tertinggal').sort((a, b) => trackStatus(b).gap - trackStatus(a).gap);
   const pct = n => total ? Math.round(n / total * 100) : 0;
-  const quads = ['P1', 'P2', 'P3', 'P4']; const byQ = q => plans.filter(a => quadOf(a) === q);
+  const quads = ['AK', 'AT', 'PR']; const byQ = q => plans.filter(a => quadOf(a) === q);
   const unclassified = plans.filter(a => !quadOf(a)).length;
   const sat = ap => satkerInfo(ap.satker)?.key || (ap.satker ? ap.satker : 'Belum ditugaskan');
 
@@ -101,10 +101,10 @@ async function exportBriefPDF() {
   doc.text(T('Laporan Pemantauan Tindak Lanjut'), M, y + 2); doc.text(T('Arahan dan Penugasan Dewan Komisioner'), M, y + 8.5);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(90);
   doc.text(T(`Posisi data per ${fmtDateLong(today)} · disusun oleh MRDK melalui SI-RDK Terintegrasi`), M, y + 14); y += 21;
-  const p1 = byQ('P1'), p2 = byQ('P2');
+  const p1 = byQ('AK'), p2 = byQ('AT');
   const summary = `Dari ${total} arahan/penugasan yang dipantau, ${done.length} (${pct(done.length)}%) telah selesai${doneVer < done.length ? ` (${doneVer} di antaranya telah diverifikasi MRDK)` : ''} dan ${prog.length} (${pct(prog.length)}%) masih dalam proses. `
     + `Terdapat ${late.length} penugasan yang telah melewati target penyelesaian, ${near.length} penugasan akan jatuh tempo dalam ${BRIEF_NEAR_DAYS} hari ke depan, dan ${behind.length} penugasan tertinggal dari trajectory yang telah disetujui. `
-    + `Sebanyak ${p1.length} penugasan berprioritas P1 (Kritis) dan ${p2.length} penugasan P2 (Tinggi); ${p1.filter(isLate).length + p2.filter(isLate).length} di antaranya telah melewati target.`;
+    + `Sebanyak ${p1.length} penugasan berada dalam kategori Atensi Khusus dan ${p2.length} dalam kategori Atensi Tinggi; ${p1.filter(isLate).length + p2.filter(isLate).length} di antaranya telah melewati target.`;
   doc.setFillColor(236, 244, 250); const sl = doc.splitTextToSize(T(summary), CW - 8); doc.roundedRect(M, y, CW, sl.length * 4.1 + 9, 2, 2, 'F');
   doc.setFont('helvetica', 'bold'); doc.setFontSize(8.4); doc.setTextColor(...C.navy); doc.text('RINGKASAN EKSEKUTIF', M + 4, y + 5);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8.6); doc.setTextColor(30); doc.text(sl, M + 4, y + 10); y += sl.length * 4.1 + 15;
@@ -146,15 +146,15 @@ async function exportBriefPDF() {
       [20, '*', 28, 16, 24, 14], { right: [5] });
   });
 
-  /* ---------- 4. prioritas ---------- */
-  section(4, 'Statistik Prioritas', 'Prioritas ditetapkan MRDK berdasarkan urgensi × dampak dan dikonfirmasi satker: P1 Kritis · P2 Tinggi · P3 Sedang · P4 Rendah.');
-  table(['Kuadran', 'Total', 'Dalam Proses', 'Selesai', 'Terlambat', 'Tertinggal'], [...quads.map(q => { const l = byQ(q); return [QUADRANTS[q].label, l.length, l.filter(a => dkStatus(a) === 'Dalam Proses').length, l.filter(a => dkStatus(a) === 'Selesai').length, l.filter(isLate).length, l.filter(a => trackStatus(a)?.st === 'Tertinggal').length]; }), ...(unclassified ? [['Belum ditetapkan', unclassified, '', '', '', '']] : [])],
+  /* ---------- 4. atensi ---------- */
+  section(4, 'Kategori Atensi Pemantauan', ATENSI_NOTE + ' Kategori diturunkan dari atribut faktual (horizon penyelesaian dan cakupan dampak) yang dicatat MRDK dan dikonfirmasi satker; penugasan yang diminta khusus oleh DK otomatis masuk Atensi Khusus.');
+  table(['Kategori atensi', 'Total', 'Dalam Proses', 'Selesai', 'Terlambat', 'Tertinggal'], [...quads.map(q => { const l = byQ(q); return [QUADRANTS[q].label, l.length, l.filter(a => dkStatus(a) === 'Dalam Proses').length, l.filter(a => dkStatus(a) === 'Selesai').length, l.filter(isLate).length, l.filter(a => trackStatus(a)?.st === 'Tertinggal').length]; }), ...(unclassified ? [['Belum dicatat', unclassified, '', '', '', '']] : [])],
     ['*', 16, 24, 18, 20, 20], { right: [1, 2, 3, 4, 5] });
   const prioRows = list => list.slice().sort((a, b) => (dkStatus(a) === 'Selesai') - (dkStatus(b) === 'Selesai') || isLate(b) - isLate(a) || a.targetDate.localeCompare(b.targetDate))
-    .map(a => { const t = trackStatus(a); return [a.id, a.arahan, sat(a), `U ${a.cls.urgency} / D ${a.cls.impact}`, dkStatus(a), `${a.progress}%`, fmtDate(a.targetDate), [isLate(a) ? `Terlambat ${-daysToTarget(a)} hari` : '', t?.st === 'Tertinggal' ? `Tertinggal ${t.gap} poin` : ''].filter(Boolean).join('; ') || '-']; });
-  const pcols = ['ID', 'Arahan / Penugasan', 'Satker', 'Urgensi / Dampak', 'Status', 'Progres', 'Target', 'Catatan'], pcw = [19, '*', 15, 28, 19, 13, 19, 24];
-  sub(`4.a P1 · Kritis (${p1.length})`, C.red); table(pcols, prioRows(p1), pcw, { empty: 'Tidak ada penugasan P1.', headColor: C.red, right: [5] });
-  sub(`4.b P2 · Tinggi (${p2.length})`, C.amber); table(pcols, prioRows(p2), pcw, { empty: 'Tidak ada penugasan P2.', headColor: C.amber, right: [5] });
+    .map(a => { const t = trackStatus(a); return [a.id, a.arahan, sat(a), a.cls.dk ? `Diminta khusus DK (${a.cls.horizon} · ${a.cls.scope})` : `${a.cls.horizon} · ${a.cls.scope}`, dkStatus(a), `${a.progress}%`, fmtDate(a.targetDate), [isLate(a) ? `Terlambat ${-daysToTarget(a)} hari` : '', t?.st === 'Tertinggal' ? `Tertinggal ${t.gap} poin` : ''].filter(Boolean).join('; ') || '-']; });
+  const pcols = ['ID', 'Arahan / Penugasan', 'Satker', 'Atribut (horizon · cakupan)', 'Status', 'Progres', 'Target', 'Catatan'], pcw = [19, '*', 15, 32, 19, 13, 19, 22];
+  sub(`4.a Atensi Khusus (${p1.length})`, C.red); table(pcols, prioRows(p1), pcw, { empty: 'Tidak ada penugasan dengan Atensi Khusus.', headColor: C.red, right: [5] });
+  sub(`4.b Atensi Tinggi (${p2.length})`, C.amber); table(pcols, prioRows(p2), pcw, { empty: 'Tidak ada penugasan dengan Atensi Tinggi.', headColor: C.amber, right: [5] });
 
   /* ---------- penutup ---------- */
   need(16); doc.setFont('helvetica', 'italic'); doc.setFontSize(7.6); doc.setTextColor(110);

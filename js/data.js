@@ -5,7 +5,7 @@
    opened, so "Terlambat" and "mendekati deadline" stay meaningful in demos.
    ========================================================================= */
 
-const SEED_VERSION = 15;
+const SEED_VERSION = 17;
 
 const ROLE_LABEL = { admin: 'Admin / MRDK', satker: 'Satker Pelaksana', viewer: 'Pimpinan' };
 
@@ -109,25 +109,25 @@ const EXTRACTION_LIBRARY = {
     rdkDate: '2026-09-15',
     topic: 'Penguatan Pengawasan dan Perlindungan Konsumen',
     items: [
-      { arahan: 'Memperkuat mekanisme pengawasan terhadap aktivitas jasa keuangan digital dan meningkatkan perlindungan konsumen.', satker: 'Departemen Pengawasan Perilaku Pelaku Usaha Jasa Keuangan', tindakLanjut: 'Pengembangan mekanisme monitoring dan evaluasi.', priority: 'Tinggi', days: 90 },
-      { arahan: 'Melakukan evaluasi atas efektivitas penanganan pengaduan konsumen pada PUJK sektor perbankan.', satker: 'Departemen Pelindungan Konsumen', tindakLanjut: 'Penyusunan kerangka evaluasi dan pengumpulan data pengaduan.', priority: 'Sedang', days: 120 },
-      { arahan: 'Menyusun kajian kebutuhan pengaturan atas layanan Buy Now Pay Later (BNPL) dan paylater perbankan.', satker: '', bidang: 'Pengawasan Perusahaan Pembiayaan, Modal Ventura, Keuangan Mikro, dan Lembaga Jasa Keuangan Lainnya', tindakLanjut: 'Menunggu penetapan satker penanggung jawab.', priority: 'Sedang', days: 150 }
+      { arahan: 'Memperkuat mekanisme pengawasan terhadap aktivitas jasa keuangan digital dan meningkatkan perlindungan konsumen.', satker: 'Departemen Pengawasan Perilaku Pelaku Usaha Jasa Keuangan', tindakLanjut: 'Pengembangan mekanisme monitoring dan evaluasi.', priority: 'Atensi Tinggi', days: 90 },
+      { arahan: 'Melakukan evaluasi atas efektivitas penanganan pengaduan konsumen pada PUJK sektor perbankan.', satker: 'Departemen Pelindungan Konsumen', tindakLanjut: 'Penyusunan kerangka evaluasi dan pengumpulan data pengaduan.', priority: 'Pemantauan Reguler', days: 120 },
+      { arahan: 'Menyusun kajian kebutuhan pengaturan atas layanan Buy Now Pay Later (BNPL) dan paylater perbankan.', satker: '', bidang: 'Pengawasan Perusahaan Pembiayaan, Modal Ventura, Keuangan Mikro, dan Lembaga Jasa Keuangan Lainnya', tindakLanjut: 'Menunggu penetapan satker penanggung jawab.', priority: 'Pemantauan Reguler', days: 150 }
     ]
   },
   asuransi: {
     topic: 'Penguatan Tata Kelola Asuransi',
     items: [
-      { arahan: 'Mempercepat penyelesaian klaim pemegang polis pada perusahaan asuransi bermasalah dan memastikan transparansi informasi kepada konsumen.', satker: 'Departemen Pengawasan Asuransi dan Jasa Penunjang', tindakLanjut: 'Penyusunan rencana penyelesaian klaim dan publikasi status penanganan.', priority: 'Tinggi', days: 60 },
-      { arahan: 'Memperketat pengawasan produk asuransi yang dikaitkan dengan investasi (PAYDI), termasuk pemasaran melalui bancassurance.', satker: 'Departemen Pengawasan Asuransi dan Jasa Penunjang', tindakLanjut: 'Pemeriksaan tematik pemasaran PAYDI pada bank mitra.', priority: 'Tinggi', days: 90 },
-      { arahan: 'Meningkatkan edukasi kepada masyarakat mengenai hak dan kewajiban pemegang polis.', satker: 'Departemen Literasi, Inklusi Keuangan, dan Komunikasi', tindakLanjut: 'Penyusunan materi edukasi dan kampanye digital.', priority: 'Sedang', days: 120 }
+      { arahan: 'Mempercepat penyelesaian klaim pemegang polis pada perusahaan asuransi bermasalah dan memastikan transparansi informasi kepada konsumen.', satker: 'Departemen Pengawasan Asuransi dan Jasa Penunjang', tindakLanjut: 'Penyusunan rencana penyelesaian klaim dan publikasi status penanganan.', priority: 'Atensi Tinggi', days: 60 },
+      { arahan: 'Memperketat pengawasan produk asuransi yang dikaitkan dengan investasi (PAYDI), termasuk pemasaran melalui bancassurance.', satker: 'Departemen Pengawasan Asuransi dan Jasa Penunjang', tindakLanjut: 'Pemeriksaan tematik pemasaran PAYDI pada bank mitra.', priority: 'Atensi Tinggi', days: 90 },
+      { arahan: 'Meningkatkan edukasi kepada masyarakat mengenai hak dan kewajiban pemegang polis.', satker: 'Departemen Literasi, Inklusi Keuangan, dan Komunikasi', tindakLanjut: 'Penyusunan materi edukasi dan kampanye digital.', priority: 'Pemantauan Reguler', days: 120 }
     ]
   },
   bank: {
     topic: 'Transformasi Digital Perbankan',
     items: [
-      { arahan: 'Memperkuat ketahanan siber dan manajemen risiko teknologi informasi pada bank digital.', satker: 'Departemen Pengendalian Kualitas dan Pengembangan Pengawasan Perbankan', tindakLanjut: 'Asesmen maturitas keamanan siber pada bank digital.', priority: 'Tinggi', days: 75 },
-      { arahan: 'Menyusun pengaturan layanan perbankan berbasis open API serta pelindungan data nasabah.', satker: 'Departemen Pengaturan dan Perizinan Inovasi Teknologi Sektor Keuangan, Aset Keuangan Digital dan Aset Kripto', tindakLanjut: 'Penyusunan naskah akademik pengaturan open API.', priority: 'Sedang', days: 150 },
-      { arahan: 'Melakukan asesmen kesiapan BPR dalam implementasi digitalisasi layanan.', satker: '', bidang: 'Pengawasan Perbankan', tindakLanjut: 'Menunggu penetapan satker penanggung jawab.', priority: 'Rendah', days: 180 }
+      { arahan: 'Memperkuat ketahanan siber dan manajemen risiko teknologi informasi pada bank digital.', satker: 'Departemen Pengendalian Kualitas dan Pengembangan Pengawasan Perbankan', tindakLanjut: 'Asesmen maturitas keamanan siber pada bank digital.', priority: 'Atensi Tinggi', days: 75 },
+      { arahan: 'Menyusun pengaturan layanan perbankan berbasis open API serta pelindungan data nasabah.', satker: 'Departemen Pengaturan dan Perizinan Inovasi Teknologi Sektor Keuangan, Aset Keuangan Digital dan Aset Kripto', tindakLanjut: 'Penyusunan naskah akademik pengaturan open API.', priority: 'Pemantauan Reguler', days: 150 },
+      { arahan: 'Melakukan asesmen kesiapan BPR dalam implementasi digitalisasi layanan.', satker: '', bidang: 'Pengawasan Perbankan', tindakLanjut: 'Menunggu penetapan satker penanggung jawab.', priority: 'Pemantauan Reguler', days: 180 }
     ]
   }
 };
@@ -249,7 +249,7 @@ function buildSeed() {
       id, documentId: doc.document_id, documentName: doc.document_name,
       rdkDate: D(spec.rdk), topic: spec.topic, arahan,
       bidang: sat ? sat.bidang : (x.bidang || ''), satker: sat ? sat.name : '', pic: sat ? sat.pic : '',
-      priority: prio, targetDate: D(tOff), progress, manualStatus: x.manual || null,
+      priority: legacyAtensi(prio), targetDate: D(tOff), progress, manualStatus: x.manual || null,
       tindakLanjut: x.tl || '', output: x.out || '', kendala: x.kd || '', catatan: '',
       completedDate: x.done != null ? D(x.done) : '',
       verificationStatus: ver, verificationNote: x.vn || '',
@@ -312,7 +312,7 @@ function buildSeed() {
     [2, 'Praktik penagihan pihak ketiga memengaruhi kepercayaan publik terhadap industri perbankan dan OJK.', { f: -4, s: -3, m: ['Risiko Reputasi', 'Praktik penagihan tidak patut oleh pihak ketiga yang bekerja sama dengan bank', 'Sedang', -2] }],
     [3, 'Rekomendasi Komisi XI DPR RI.', { f: -14, s: -13, m: ['Risiko Reputasi', 'Penurunan kepercayaan publik atas penanganan asuransi jiwa bermasalah', 'Sedang', -12], c: -11, then: { progress: 35, verificationStatus: 'Belum Diverifikasi' } }],
     [4, '', { f: -14, s: -13, m: ['Risiko Strategis', 'Tidak tercapainya penyehatan BPR/BPRS sesuai rencana', 'Rendah', -12], c: -11 }],
-    [7, 'Bursa kripto baru beroperasi; target telah terlewati — mohon prioritas.', { f: -3, s: -1 }],
+    [7, 'Bursa kripto baru beroperasi; target telah terlewati.', { f: -3, s: -1 }],
     [11, 'Memerlukan keputusan kebijakan lintas lembaga (OJK–LPS).', { f: -3, s: -2 }],
     [12, 'Agenda nasional dengan eksposur kebijakan OJK-wide.', { f: -9, s: -8, m: ['Risiko Strategis', 'Keterlambatan pengembangan dan pendalaman bursa karbon', 'Tinggi', -7], c: -6 }],
     [17, 'Ketentuan baru pasca peralihan pengawasan aset kripto dari Bappebti.', { f: -2 }],
@@ -346,7 +346,7 @@ function buildSeed() {
   grcLog.sort((a, b) => a.at.localeCompare(b.at)).forEach(l => { l.id = 'SYNC-' + String(++syncSeq).padStart(4, '0'); });
   grcLog.reverse();
 
-  // Prioritas (urgensi × dampak) & trajectory TW I–IV
+  // Kategori atensi (atribut faktual horizon × cakupan; penanda permintaan khusus DK) & trajectory TW I–IV
   const after = (iso, days, h = 10) => { const d = new Date(iso); d.setDate(d.getDate() + days); d.setHours(h, 10 + days % 40, 0, 0); return new Date(Math.min(d.getTime(), nowMs - 120000)).toISOString(); };
   const STATE = { 23: 'none', 20: 'none', 10: 'proposed', 16: 'proposed', 22: 'proposed', 15: 'adjust', 24: 'confirmed', 18: 'confirmed', 5: 'returned', 2: 'submitted', 8: 'submitted' };
   const OUT = [['Kajian awal dan rencana kerja'], ['Kajian awal dan rencana kerja', 'Penyelesaian dan pelaporan hasil'], ['Kajian dan pemetaan permasalahan', 'Penyusunan konsep / rancangan', 'Penyelesaian dan pelaporan hasil'], ['Kajian dan pemetaan permasalahan', 'Penyusunan konsep / rancangan', 'Pelaksanaan dan koordinasi pemangku kepentingan', 'Penyelesaian dan pelaporan hasil']];
@@ -357,20 +357,25 @@ function buildSeed() {
   };
   actionPlans.forEach((ap, i) => {
     const st = STATE[i] || 'approved'; if (st === 'none') return;
-    const urgency = ap.priority; const impact = ap.strategic ? 'Tinggi' : ap.priority === 'Tinggi' ? 'Sedang' : (i % 2 ? 'Sedang' : 'Rendah');
-    const q = quadrantOf(urgency, impact); ap.priority = QUADRANTS[q].prio;
+    // Atribut faktual: horizon dari jarak target, cakupan dari penanda strategis / sifat penugasan
+    const dTo = diffDays(ap.targetDate, ap.rdkDate);  // jangka waktu yang diberikan sejak arahan
+    const horizon = dTo <= 90 ? 'Segera' : ap.targetDate <= `${ap.rdkDate.slice(0, 4)}-12-31` ? 'Tahun Berjalan' : 'Berkelanjutan';
+    const scope = ap.strategic ? 'OJK-wide' : (P[i][6] === 'Tinggi' || i % 3 === 0) ? 'Lintas Satker' : 'Satu Satker';
+    const DKREQ = { 7: 'Risalah RDK No. 29/RDK/2026 — DK meminta laporan khusus pengawasan bursa kripto', 0: 'Risalah RDK No. 31/RDK/2026 — DK meminta pemantauan khusus' };
+    const dk = !!DKREQ[i];
+    const q = quadrantOf(horizon, scope, dk); ap.priority = QUADRANTS[q].prio;
     const at = after(ap.createdAt, 1, 9);
-    ap.cls = { urgency, impact, note: '', by: MR, at, status: 'proposed', satker: null, proposal: null };
-    log(at, MR, 'admin', 'Penetapan Prioritas', ap.id, '-', `${QUADRANTS[q].label} (U ${urgency} · D ${impact})`, '');
+    ap.cls = { horizon, scope, dk, dkRef: DKREQ[i] || '', note: '', by: MR, at, status: 'proposed', satker: null, proposal: null };
+    log(at, MR, 'admin', 'Penetapan Atensi', ap.id, '-', `${QUADRANTS[q].label} (${horizon} · ${scope}${dk ? ' · diminta khusus DK' : ''})`, dk ? 'Rujukan DK: ' + DKREQ[i] : '');
     if (st === 'proposed' || !ap.satker) return;
     if (st === 'adjust') {
       ap.cls.status = 'adjust'; ap.cls.satker = ap.satker;
-      ap.cls.proposal = { urgency: 'Rendah', impact, note: 'Program bersifat berkelanjutan dan dapat dijadwalkan bersama TPAKD; tenggat tidak mendesak.', by: ap.pic, at: after(ap.createdAt, 2, 14) };
-      log(ap.cls.proposal.at, ap.pic, 'satker', 'Usulan Penyesuaian Prioritas', ap.id, `U ${urgency} · D ${impact}`, `U Rendah · D ${impact}`, ap.cls.proposal.note);
+      ap.cls.proposal = { horizon: 'Berkelanjutan', scope, note: 'Program bersifat berkelanjutan dan dijadwalkan bersama TPAKD lintas tahun.', by: ap.pic, at: after(ap.createdAt, 2, 14) };
+      log(ap.cls.proposal.at, ap.pic, 'satker', 'Usulan Penyesuaian Atensi', ap.id, `${horizon} · ${scope}`, `Berkelanjutan · ${scope}`, ap.cls.proposal.note);
       return;
     }
     Object.assign(ap.cls, { status: 'confirmed', satker: ap.satker, confirmedBy: ap.pic, confirmedAt: after(ap.createdAt, 2, 11) });
-    log(ap.cls.confirmedAt, ap.pic, 'satker', 'Konfirmasi Prioritas', ap.id, 'Menunggu Konfirmasi Satker', 'Dikonfirmasi', QUADRANTS[q].label);
+    log(ap.cls.confirmedAt, ap.pic, 'satker', 'Konfirmasi Atensi', ap.id, 'Menunggu Konfirmasi Satker', 'Dikonfirmasi', QUADRANTS[q].label);
     if (st === 'confirmed') return;
     const t = mkTraj(ap); const sub = after(ap.createdAt, 4, 15);
     ap.traj = { ...t, satker: ap.satker, status: 'submitted', by: ap.pic, at: sub, submittedAt: sub };
@@ -414,10 +419,10 @@ function buildSeed() {
   note(['admin', 'viewer'], 'DPTP melakukan update progress RA-2026-014 menjadi 100%.', 'ok', { type: 'plan', id: 'RA-2026-014' }, actionPlans[13].updatedAt);
   note(['satker:Departemen Pelindungan Konsumen'], 'RA-2026-002 telah disetujui Admin MRDK.', 'ok', { type: 'plan', id: 'RA-2026-002' }, actionPlans[1].submissions[0].resultAt);
   note(['admin'], '4 penugasan strategis siap/perlu dikirim ke SI-GRC.', 'warn', { type: 'grc' }, T(0, 7, 30));
-  note(['admin'], 'DLIK mengajukan penyesuaian prioritas RA-2026-016.', 'warn', { type: 'plan', id: 'RA-2026-016' }, actionPlans[15].cls.proposal.at);
+  note(['admin'], 'DLIK mengajukan koreksi atribut atensi RA-2026-016.', 'warn', { type: 'plan', id: 'RA-2026-016' }, actionPlans[15].cls.proposal.at);
   note(['admin'], '2 trajectory menunggu persetujuan MRDK (RA-2026-003, RA-2026-009).', 'warn', { type: 'plan', id: 'RA-2026-003' }, actionPlans[8].traj.submittedAt);
-  note(['satker:Departemen Pengawasan Perilaku Pelaku Usaha Jasa Keuangan'], 'Mohon konfirmasi prioritas RA-2026-023 yang ditetapkan MRDK.', 'warn', { type: 'plan', id: 'RA-2026-023' }, actionPlans[22].cls.at);
-  note(['satker:Departemen Pelindungan Konsumen'], 'Prioritas RA-2026-025 telah dikonfirmasi — silakan susun trajectory.', 'info', { type: 'plan', id: 'RA-2026-025' }, actionPlans[24].cls.confirmedAt);
+  note(['satker:Departemen Pengawasan Perilaku Pelaku Usaha Jasa Keuangan'], 'Mohon konfirmasi atribut atensi RA-2026-023 yang dicatat MRDK.', 'warn', { type: 'plan', id: 'RA-2026-023' }, actionPlans[22].cls.at);
+  note(['satker:Departemen Pelindungan Konsumen'], 'Atribut atensi RA-2026-025 telah dikonfirmasi — silakan susun trajectory.', 'info', { type: 'plan', id: 'RA-2026-025' }, actionPlans[24].cls.confirmedAt);
   note(['satker:Departemen Literasi, Inklusi Keuangan, dan Komunikasi'], 'Trajectory RA-2026-006 dikembalikan MRDK untuk diperbaiki.', 'late', { type: 'plan', id: 'RA-2026-006' }, actionPlans[5].traj.reviewAt);
   notifications.sort((a, b) => b.at.localeCompare(a.at));
 

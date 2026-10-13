@@ -34,16 +34,17 @@ yang dihasilkan langsung dari data SI-RDK Terintegrasi.
 Tombol **Laporan PDF untuk DK** di Executive Dashboard menghasilkan laporan A4 berisi: ringkasan eksekutif;
 (1) status penyelesaian dengan 2 status (Dalam Proses · Selesai) dan rincian per bidang; (2) penugasan yang
 mendekati jatuh tempo (≤ 30 hari), terlambat, dan tertinggal trajectory; (3) pemisahan arahan RDK/DK vs hasil
-rapat dengan Komisi XI; (4) statistik prioritas serta daftar P1 (Kritis) dan P2 (Tinggi).
+rapat dengan Komisi XI; (4) statistik kategori atensi serta daftar Atensi Khusus dan Atensi Tinggi.
 
-## Prioritas & Trajectory
-Menu **Monitoring → Prioritas & Trajectory**:
-1. **Admin MRDK** menetapkan **Urgensi** dan **Dampak** (Tinggi/Sedang/Rendah) → kuadran P1 Kritis · P2 Tinggi · P3 Sedang · P4 Rendah.
-2. **Satker** mengonfirmasi, atau mengajukan penyesuaian (MRDK menetapkan final).
-3. Setelah dikonfirmasi, **Satker** menyusun **trajectory 4 triwulan** (TW I–IV tahun takwim): target progres kumulatif + tahapan/keluaran; TW IV = 100%; TW yang berakhir sebelum tanggal RDK otomatis 0%.
-4. **Admin MRDK** menyetujui atau mengembalikan trajectory.
-
-Setelah disetujui, progres dibandingkan dengan target TW terakhir yang telah berakhir → *Sesuai Trajectory* / *Tertinggal* / *Selesai*.
+## Atensi & Trajectory
+Menu **Monitoring → Atensi & Trajectory**. *Seluruh arahan DK wajib ditindaklanjuti; kategori atensi menunjukkan
+intensitas pemantauan oleh MRDK, bukan tingkat kepentingan arahan.*
+1. **Admin MRDK** mencatat atribut faktual: **horizon** (Segera ≤ 3 bulan sejak arahan / Tahun Berjalan / Berkelanjutan)
+   dan **cakupan** (OJK-wide / Lintas Satker / Satu Satker), serta penanda **"diminta khusus oleh DK"** beserta rujukannya.
+   Kategori diturunkan otomatis: **Atensi Khusus**, **Atensi Tinggi**, **Pemantauan Reguler**
+   (permintaan khusus DK selalu Atensi Khusus).
+2. **Satker** mengonfirmasi atau mengajukan koreksi atribut (MRDK menetapkan final).
+3. Satker menyusun **trajectory 4 triwulan** (TW I–IV tahun takwim), lalu **Admin MRDK** menyetujui atau mengembalikan.
 
 ## Integrasi SI-GRC (simulasi)
 Penugasan **strategis berdampak OJK-wide** dialirkan ke SI-GRC sebagai input profil risiko satker pengampu:

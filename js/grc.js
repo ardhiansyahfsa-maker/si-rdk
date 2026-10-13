@@ -74,7 +74,7 @@ function grcPayload(ap) {
     source_system: 'SI-RDK', source_ref: ap.id, grc_ref: g.riskId || null, submission: g.recorded ? 'update' : 'new',
     classification: 'Penugasan Strategis', impact_scope: 'OJK-wide', mrdk_note: g.note || null,
     owner_unit: { code: sat?.key || null, name: ap.satker, bidang: ap.bidang, pic: ap.pic },
-    assignment: { rdk_date: ap.rdkDate, topic: ap.topic, directive: ap.arahan, source_document: ap.documentName, priority: ap.priority },
+    assignment: { rdk_date: ap.rdkDate, topic: ap.topic, directive: ap.arahan, source_document: ap.documentName, monitoring_attention: legacyAtensi(ap.priority) },
     execution: { target_date: ap.targetDate, progress_pct: ap.progress, status: execStatus(ap), late: isLate(ap), awaiting_direction: onHold(ap), verification_status: ap.verificationStatus, last_update: ap.updateDate || null, obstacles: ap.kendala || null },
     execution_indicator: { level: s.level, reason: s.reason }
   };
