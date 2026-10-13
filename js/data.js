@@ -5,7 +5,7 @@
    opened, so "Terlambat" and "mendekati deadline" stay meaningful in demos.
    ========================================================================= */
 
-const SEED_VERSION = 13;
+const SEED_VERSION = 14;
 
 const ROLE_LABEL = { admin: 'Admin / MRDK', satker: 'Satker Pelaksana', viewer: 'Pimpinan' };
 
@@ -192,7 +192,7 @@ function buildSeed() {
     [2, 'DRPD', 'Meningkatkan efektivitas pengawasan terhadap BPR/BPRS dengan rasio permodalan di bawah ketentuan.', 70, 'Disetujui', 20, 'Tinggi', -10, { prev: 45, tl: 'Penetapan 18 BPR dalam pengawasan intensif dan penyusunan rencana tindak penyehatan.', out: 'Daftar BPR pengawasan intensif dan rencana penyehatan', vn: 'Progres disetujui. Lanjutkan pemantauan rencana penyehatan.' }],
     [2, 'DLIK', 'Menyusun peta jalan peningkatan indeks literasi keuangan di wilayah 3T (terdepan, terluar, tertinggal).', 20, 'Perlu Perbaikan', 60, 'Sedang', -7, { prev: 0, tl: 'Pengumpulan data indeks literasi per provinsi.', vn: 'Mohon lampirkan baseline indeks literasi per provinsi dan rincian target tahunan.' }],
     [3, 'DPUK', 'Mengintensifkan koordinasi Satgas PASTI untuk pemblokiran entitas pinjaman online ilegal.', 100, 'Disetujui', -25, 'Tinggi', -42, { prev: 80, done: -42, tl: 'Pemblokiran 1.240 entitas pinjol ilegal bersama Kementerian Komdigi dan Satgas PASTI.', out: 'Laporan Satgas PASTI Triwulan III', vn: 'Disetujui.' }],
-    [3, 'DPIR', 'Mengembangkan sistem deteksi dini iklan pinjaman online ilegal di media sosial.', 60, 'Belum Diverifikasi', -6, 'Tinggi', -21, { tl: 'Prototipe crawler dan model klasifikasi iklan selesai diuji internal.', kd: 'Pengadaan lisensi API media sosial tertunda.' }],
+    [7, 'DPIR', 'Melakukan pengawasan terhadap bursa aset kripto yang baru berdiri, meliputi kesiapan infrastruktur perdagangan, tata kelola, manajemen risiko, dan pelindungan konsumen.', 60, 'Belum Diverifikasi', -6, 'Tinggi', -21, { tl: 'Pemeriksaan kesiapan sistem perdagangan, kliring, dan kustodian bursa kripto; penyusunan kerangka pengawasan berbasis risiko.', kd: 'Data transaksi harian dari bursa belum tersambung ke sistem pengawasan OJK.' }],
     [3, 'DLIK', 'Menyelenggarakan kampanye edukasi waspada pinjaman online ilegal di 34 provinsi.', 85, 'Menunggu Verifikasi', 18, 'Sedang', -1, { prev: 70, tl: 'Kampanye telah terlaksana di 29 provinsi.', out: 'Rekap peserta dan materi kampanye' }],
     [4, 'DIPD', 'Melakukan penilaian kembali (fit and proper) pihak utama pada perusahaan asuransi dalam pengawasan khusus.', 45, 'Belum Diverifikasi', 15, 'Tinggi', -9, { tl: 'Penilaian kembali 9 dari 20 pihak utama selesai.' }],
     [4, 'DPPP', 'Menyusun rancangan POJK pemisahan unit usaha syariah perusahaan asuransi.', 0, 'Belum Diverifikasi', 75, 'Sedang', null, {}],
@@ -312,7 +312,7 @@ function buildSeed() {
     [2, 'Praktik penagihan pihak ketiga memengaruhi kepercayaan publik terhadap industri perbankan dan OJK.', { f: -4, s: -3, m: ['Risiko Reputasi', 'Praktik penagihan tidak patut oleh pihak ketiga yang bekerja sama dengan bank', 'Sedang', -2] }],
     [3, 'Rekomendasi Komisi XI DPR RI.', { f: -14, s: -13, m: ['Risiko Reputasi', 'Penurunan kepercayaan publik atas penanganan asuransi jiwa bermasalah', 'Sedang', -12], c: -11, then: { progress: 35, verificationStatus: 'Belum Diverifikasi' } }],
     [4, '', { f: -14, s: -13, m: ['Risiko Strategis', 'Tidak tercapainya penyehatan BPR/BPRS sesuai rencana', 'Rendah', -12], c: -11 }],
-    [7, 'Target telah terlewati; mohon prioritas.', { f: -3, s: -1 }],
+    [7, 'Bursa kripto baru beroperasi; target telah terlewati — mohon prioritas.', { f: -3, s: -1 }],
     [11, 'Memerlukan keputusan kebijakan lintas lembaga (OJK–LPS).', { f: -3, s: -2 }],
     [12, 'Agenda nasional dengan eksposur kebijakan OJK-wide.', { f: -9, s: -8, m: ['Risiko Strategis', 'Keterlambatan pengembangan dan pendalaman bursa karbon', 'Tinggi', -7], c: -6 }],
     [17, 'Ketentuan baru pasca peralihan pengawasan aset kripto dari Bappebti.', { f: -2 }],
