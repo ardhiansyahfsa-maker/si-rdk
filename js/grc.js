@@ -132,6 +132,46 @@ Actions.grcNote = el => {
     } }]
   });
 };
+/* Ubah status (Admin MRDK) — hanya transisi yang sah sesuai tahapnya; status tidak diubah bebas. */
+function grcEditOptions(ap) {
+  const st = grcStatus(ap); const o = [];
+  if (st === 'Menunggu Penugasan') o.push(['assign', 'Tetapkan satker penanggung jawab', 'Status berlanjut ke konfirmasi cakupan oleh satker.']);
+  if (st === 'Menunggu Konfirmasi Cakupan' && ap.cls?.status !== 'adjust') o.push(['force', 'Tetapkan cakupan OJK-wide tanpa menunggu konfirmasi satker → Siap Dikirim', 'Wajib beralasan; satker diberi tahu dan tercatat di audit trail.']);
+  if (canSendGRC(ap)) o.push(['send', st === 'Perlu Sinkron Ulang' ? 'Kirim pembaruan ke SI-GRC' : 'Kirim ke SI-GRC → Menunggu Pengelompokan Risiko', '']);
+  if (canMapGRC(ap)) o.push(['map', 'Simulasi status balik SI-GRC: pengelompokan risiko → Menunggu Konfirmasi RQO', 'Demo — di produksi status ini datang dari SI-GRC.']);
+  if (canConfirmGRC(ap)) o.push(['confirm', 'Simulasi status balik SI-GRC: konfirmasi RQO → Selesai', 'Demo — di produksi status ini datang dari SI-GRC.']);
+  o.push(['scope', ap.cls?.status === 'adjust' ? 'Tanggapi usulan koreksi atribut dari satker' : 'Ubah atribut cakupan / horizon', 'Jika cakupan bukan lagi OJK-wide, penugasan keluar dari SI-GRC (ditarik bila sudah terkirim).']);
+  o.push(['note', 'Ubah catatan MRDK untuk SI-GRC', '']);
+  return o;
+}
+Actions.grcEdit = el => {
+  if (!isRole('admin')) return toast('Hanya Admin MRDK yang dapat mengubah status.', 'error');
+  const ap = findPlan(el.dataset.id); if (!ap) return;
+  const opts = grcEditOptions(ap); const st = grcStatus(ap);
+  openModal({
+    title: 'Ubah Status SI-GRC', sub: `<span class="mono">${ap.id}</span> · ${esc(ap.arahan.slice(0, 80))}${ap.arahan.length > 80 ? '…' : ''}`, size: 'sm',
+    body: `<div style="margin-bottom:12px">Status saat ini: ${badge(st)}</div>
+      <div class="section-label" style="margin-bottom:8px">Pilih tindakan</div>
+      <div style="display:flex;flex-direction:column;gap:8px">${opts.map(([k, l, h], i) => `<label class="check" style="align-items:flex-start"><input type="radio" name="ge-opt" value="${k}" ${i === 0 ? 'checked' : ''}><span><b style="font-weight:600">${esc(l)}</b>${h ? `<br><span class="small muted">${esc(h)}</span>` : ''}</span></label>`).join('')}</div>
+      <div class="field" id="ge-note-wrap" style="margin-top:12px;${opts[0][0] === 'force' ? '' : 'display:none'}"><label for="ge-note">Alasan penetapan oleh MRDK <span class="req">*</span></label><textarea class="textarea" id="ge-note" style="min-height:60px" placeholder="Mis. satker belum merespons dalam 5 hari kerja; cakupan OJK-wide sesuai Keputusan RDK"></textarea></div>
+      <div class="small muted" style="margin-top:12px">Status tahap 3–4 ditetapkan di SI-GRC dan tidak dapat diubah langsung dari SI-RDK.</div>`,
+    onMount: m => $$('input[name="ge-opt"]', m).forEach(r => r.addEventListener('change', () => { $('#ge-note-wrap', m).style.display = r.value === 'force' && r.checked ? '' : 'none'; })),
+    foot: [{ label: 'Batal', cls: 'ghost' }, { label: 'Lanjut', cls: 'primary', icon: 'arrowRight', onClick: m => {
+      const k = $('input[name="ge-opt"]:checked', m.el)?.value; const d = { dataset: { id: ap.id } };
+      if (k === 'force') {
+        const note = $('#ge-note', m.el).value.trim();
+        if (!note) { $('#ge-note', m.el).classList.add('invalid'); return toast('⚠ Alasan wajib diisi.', 'error'); }
+        const now = new Date().toISOString();
+        Object.assign(ap.cls, { status: 'confirmed', satker: ap.satker, confirmedBy: `${cu().name} (penetapan MRDK)`, confirmedAt: now, mrdkOverride: { note, by: cu().name, at: now } });
+        audit('Penetapan Cakupan oleh MRDK', ap.id, 'Menunggu Konfirmasi Cakupan', 'Siap Dikirim', note);
+        notify(['satker:' + ap.satker], `Atribut atensi ${ap.id} (cakupan OJK-wide) ditetapkan MRDK tanpa konfirmasi Satker: ${note}`, 'info', { type: 'plan', id: ap.id });
+        m.close(); toast('Cakupan ditetapkan MRDK · status: Siap Dikirim.'); commit(); return;
+      }
+      m.close();
+      ({ assign: Actions.assignPlan, send: Actions.grcSync, map: Actions.grcMap, confirm: Actions.grcConfirm, scope: Actions.clsSet, note: Actions.grcNote })[k](d);
+    } }]
+  });
+};
 /* Pencabutan otomatis: penugasan yang sudah dikirim tetapi cakupannya tidak lagi OJK-wide. */
 function grcReconcile() {
   const out = appState.actionPlans.filter(a => a.grc?.riskId && !a.grc.withdrawnAt && !inGRC(a));
@@ -264,7 +304,7 @@ function grcDrawerSection(ap) {
     </dl>
     ${st === 'Perlu Sinkron Ulang' ? `<div class="ai-banner violet" style="margin-top:12px">${icon('rerun')}<span>Data pelaksanaan berubah sejak tercatat di SI-GRC. Kirim pembaruan agar profil risiko satker mutakhir.</span></div>` : ''}
     <div class="section-label" style="margin-top:14px">Tahapan</div>${grcStepsHTML(ap)}
-    <div class="btn-group" style="margin-top:12px">${grcActionButtons(ap)}<button class="btn sm" data-act="grcPayload" data-id="${ap.id}">${icon('eye', 'sm')}Lihat data</button></div>
+    <div class="btn-group" style="margin-top:12px">${grcActionButtons(ap)}${admin ? `<button class="btn sm" data-act="grcEdit" data-id="${ap.id}">${icon('pencil', 'sm')}Ubah status</button>` : ''}<button class="btn sm" data-act="grcPayload" data-id="${ap.id}">${icon('eye', 'sm')}Lihat data</button></div>
   </div>`;
 }
 
@@ -287,7 +327,7 @@ function grcTableHTML() {
       <td data-label="Kondisi">${kondTag(s)}<div class="small muted" style="min-width:130px">${esc(s.reason)}</div></td>
       <td data-label="Status">${badge(st)}</td>
       <td data-label="Pengelompokan Risiko">${mp ? `<div class="small" style="min-width:170px"><b style="font-weight:600">${esc(mp.category)}</b> · ${lvTag(mp.level)}<div class="muted clamp-2">${esc(mp.riskName)}</div></div>` : '<span class="muted small">Belum dikelompokkan</span>'}</td>
-      <td data-label=""><div class="btn-group" style="flex-wrap:nowrap;gap:4px">${grcActionButtons(a, 'xs')}<button class="btn xs" data-act="grcPayload" data-id="${a.id}" title="Lihat data pertukaran">${icon('eye', 'sm')}</button></div></td>
+      <td data-label=""><div class="btn-group" style="flex-wrap:nowrap;gap:4px">${isRole('admin') ? `<button class="btn xs" data-act="grcEdit" data-id="${a.id}" title="Ubah status">${icon('pencil', 'sm')}Edit</button>` : ''}<button class="btn xs" data-act="grcPayload" data-id="${a.id}" title="Lihat data pertukaran">${icon('eye', 'sm')}</button></div></td>
     </tr>`; }).join('')}
   </tbody></table></div><div class="tbl-foot"><span><b class="tnum">${rows.length}</b> dari <b class="tnum">${grcPlans().length}</b> penugasan ber-cakupan OJK-wide</span></div>`;
 }
