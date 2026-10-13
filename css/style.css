@@ -740,3 +740,13 @@ table.rt { width: 100%; border-collapse: collapse; font-size: 12.8px; }
 .paper li.skip { color: #666; }
 .src-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; font-size: 10px; font-weight: 600; letter-spacing: .02em; text-transform: none; background: var(--primary-50, #EAF2FA); color: var(--primary-700, #1F5A8F); vertical-align: middle; }
 .src-tag.sp { background: var(--green-50); color: var(--green-700); }
+/* Keputusan Rapat Dewan Komisioner (KRDK) */
+.paper.krdk { font-family: Tahoma, Verdana, Arial, sans-serif; font-size: 12px; line-height: 1.55; }
+.paper .krdk-logo img { height: 46px; display: block; margin-bottom: 18px; }
+.paper .krdk-title { text-align: center; font-family: 'Times New Roman', Georgia, serif; font-weight: 700; font-size: 13px; line-height: 1.45; margin-bottom: 26px; }
+.paper .krdk-topik { margin-bottom: 18px; }
+.paper .krdk-h { margin: 14px 0 4px; color: #1a1a1a; }
+.paper .krdk-h i u { color: #2F5C8A; }
+.paper .ctx { background: #F1F3F5; border-radius: 2px; }
+.paper .ph { display: inline-block; height: 9px; background: #E6EAEE; border-radius: 3px; }
+.paper .krdk-sign { margin: 30px 0 0 52%; line-height: 1.5; }

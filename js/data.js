@@ -5,7 +5,7 @@
    opened, so "Terlambat" and "mendekati deadline" stay meaningful in demos.
    ========================================================================= */
 
-const SEED_VERSION = 19;
+const SEED_VERSION = 20;
 
 const ROLE_LABEL = { admin: 'Admin / MRDK', satker: 'Satker Pelaksana', viewer: 'Pimpinan' };
 
@@ -89,7 +89,7 @@ const MASTER_TOPICS = [
 ];
 
 const DOC_SOURCES = ['Rapat Dewan Komisioner', 'Komisi XI DPR RI', 'Sekretariat Dewan Komisioner', 'BPK RI', 'Lainnya'];
-const DOC_TYPES = ['Risalah RDK', 'Laporan Singkat RDP', 'Laporan Singkat Raker', 'Nota Dinas Arahan', 'Laporan Hasil Pemeriksaan', 'Dokumen Rujukan Lain'];
+const DOC_TYPES = ['Keputusan RDK', 'Risalah RDK', 'Laporan Singkat RDP', 'Laporan Singkat Raker', 'Nota Dinas Arahan', 'Laporan Hasil Pemeriksaan', 'Dokumen Rujukan Lain'];
 
 const DEMO_USERS = [
   { username: 'admin', password: 'admin123', name: 'Ardhiansyah K', role: 'admin', satker: null, title: 'Manajer Senior MRDK', active: true },
@@ -157,18 +157,18 @@ function buildSeed() {
   const satkerByKey = Object.fromEntries(MASTER_SATKER.map(s => [s.key, s]));
 
   const docSpecs = [
-    { n: 'Risalah RDK No. 31-RDK-2026 Pengawasan dan Pelindungan Konsumen.pdf', type: 'Risalah RDK', src: 'Rapat Dewan Komisioner', rdk: -22, up: -20, topic: MASTER_TOPICS[0], no: 'No. 31/RDK/2026' },
+    { n: 'Keputusan RDK No. 31-KRDK-2026 Pengawasan dan Pelindungan Konsumen.pdf', type: 'Keputusan RDK', src: 'Rapat Dewan Komisioner', rdk: -22, up: -20, topic: MASTER_TOPICS[0], no: 'No. 31/KRDK/2026' },
     { n: 'Laporan Singkat RDP Komisi XI - Evaluasi Kinerja Semester I 2026.pdf', type: 'Laporan Singkat RDP', src: 'Komisi XI DPR RI', rdk: -70, up: -67, topic: MASTER_TOPICS[1], no: 'LS/RDP/XI/2026/07' },
-    { n: 'Risalah RDK No. 18-RDK-2026 Pinjaman Online Ilegal.pdf', type: 'Risalah RDK', src: 'Rapat Dewan Komisioner', rdk: -110, up: -108, topic: MASTER_TOPICS[2], no: 'No. 18/RDK/2026' },
+    { n: 'Keputusan RDK No. 18-KRDK-2026 Pinjaman Online Ilegal.pdf', type: 'Keputusan RDK', src: 'Rapat Dewan Komisioner', rdk: -110, up: -108, topic: MASTER_TOPICS[2], no: 'No. 18/KRDK/2026' },
     { n: 'ND Arahan DK - Penguatan Tata Kelola Asuransi.docx', type: 'Nota Dinas Arahan', src: 'Sekretariat Dewan Komisioner', rdk: -55, up: -54, topic: MASTER_TOPICS[3], no: 'ND-112/SDK/2026' },
-    { n: 'Risalah RDK No. 14-RDK-2026 Pendalaman Pasar Modal.pdf', type: 'Risalah RDK', src: 'Rapat Dewan Komisioner', rdk: -130, up: -128, topic: MASTER_TOPICS[4], no: 'No. 14/RDK/2026' },
+    { n: 'Keputusan RDK No. 14-KRDK-2026 Pendalaman Pasar Modal.pdf', type: 'Keputusan RDK', src: 'Rapat Dewan Komisioner', rdk: -130, up: -128, topic: MASTER_TOPICS[4], no: 'No. 14/KRDK/2026' },
     { n: 'Laporan Singkat Raker Komisi XI - Program Kerja dan Anggaran OJK 2027.pdf', type: 'Laporan Singkat Raker', src: 'Komisi XI DPR RI', rdk: -40, up: -38, topic: MASTER_TOPICS[5], no: 'LS/RAKER/XI/2026/09' },
-    { n: 'Risalah RDK No. 29-RDK-2026 Pengawasan Aset Kripto.pdf', type: 'Risalah RDK', src: 'Rapat Dewan Komisioner', rdk: -30, up: -29, topic: MASTER_TOPICS[6], no: 'No. 29/RDK/2026' },
-    { n: 'Risalah RDK No. 09-RDK-2026 Stabilitas Sektor Jasa Keuangan.pdf', type: 'Risalah RDK', src: 'Rapat Dewan Komisioner', rdk: -160, up: -158, topic: MASTER_TOPICS[7], no: 'No. 09/RDK/2026' },
+    { n: 'Keputusan RDK No. 29-KRDK-2026 Pengawasan Aset Kripto.pdf', type: 'Keputusan RDK', src: 'Rapat Dewan Komisioner', rdk: -30, up: -29, topic: MASTER_TOPICS[6], no: 'No. 29/KRDK/2026' },
+    { n: 'Keputusan RDK No. 09-KRDK-2026 Stabilitas Sektor Jasa Keuangan.pdf', type: 'Keputusan RDK', src: 'Rapat Dewan Komisioner', rdk: -160, up: -158, topic: MASTER_TOPICS[7], no: 'No. 09/KRDK/2026' },
     { n: 'LHP BPK RI - Kinerja Pengawasan Sektor Jasa Keuangan TA 2025.pdf', type: 'Laporan Hasil Pemeriksaan', src: 'BPK RI', rdk: -90, up: -86, topic: MASTER_TOPICS[8], no: 'LHP 21/LHP/XV/2026' },
     { n: 'ND Arahan DK - Edukasi Keuangan Daerah.docx', type: 'Nota Dinas Arahan', src: 'Sekretariat Dewan Komisioner', rdk: -15, up: -14, topic: MASTER_TOPICS[5], no: 'ND-147/SDK/2026' },
     { n: 'Laporan Singkat RDP Komisi XI - Pelindungan Konsumen Asuransi.pdf', type: 'Laporan Singkat RDP', src: 'Komisi XI DPR RI', rdk: -6, up: -2, topic: MASTER_TOPICS[3], no: 'LS/RDP/XI/2026/10', pending: true, tpl: 'asuransi' },
-    { n: 'Risalah RDK No. 33-RDK-2026 Digitalisasi Perbankan.pdf', type: 'Risalah RDK', src: 'Rapat Dewan Komisioner', rdk: -3, up: -1, topic: MASTER_TOPICS[9], no: 'No. 33/RDK/2026', pending: true, tpl: 'bank' }
+    { n: 'Keputusan RDK No. 33-KRDK-2026 Digitalisasi Perbankan.pdf', type: 'Keputusan RDK', src: 'Rapat Dewan Komisioner', rdk: -3, up: -1, topic: MASTER_TOPICS[9], no: 'No. 33/KRDK/2026', pending: true, tpl: 'bank' }
   ];
 
   const documents = docSpecs.map((s, i) => ({
@@ -407,6 +407,7 @@ function buildSeed() {
         include: true, rdkDate: a.rdkDate, topic: a.topic, arahan: a.arahan, bidang: a.bidang, satker: a.satker,
         assignmentStatus: a.satker ? 'Sudah Ditugaskan' : 'Belum Ditugaskan', respon: 'Belum ada respon', completedDate: '',
         tindakLanjut: 'Penyusunan rencana tindak lanjut oleh satker penanggung jawab.', priority: a.priority, targetDate: a.targetDate,
+        ...(d.document_type === 'Keputusan RDK' ? { addressee: krdkAddressee(a.satker, a.bidang) } : {}),
         conf: confidences(d.document_id + a.id)
       }))
     };

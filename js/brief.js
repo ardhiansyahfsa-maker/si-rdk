@@ -136,7 +136,7 @@ async function exportBriefPDF() {
   sub(`2.c Tertinggal dari trajectory (${behind.length})`, C.red); table(cols, planRows(behind, a => { const t = trackStatus(a); return `Target ${TW[t.ref.i]} ${t.ref.target}%, kurang ${t.gap} poin`; }), cw, { empty: 'Tidak ada penugasan yang tertinggal dari trajectory.', headColor: C.red });
 
   /* ---------- 3. sumber ---------- */
-  section(3, 'Arahan RDK dan Hasil Rapat dengan Komisi XI', 'Pemisahan berdasarkan sumber dokumen rujukan: Risalah RDK dan Nota Dinas Arahan DK dikelompokkan sebagai arahan Dewan Komisioner; Laporan Singkat Raker/RDP dikelompokkan sebagai hasil rapat dengan Komisi XI DPR RI, dengan rujukan disposisi ADK di SIPENA sebagai dasar penugasan satker.');
+  section(3, 'Arahan RDK dan Hasil Rapat dengan Komisi XI', 'Pemisahan berdasarkan sumber dokumen rujukan: Keputusan RDK dan Nota Dinas Arahan DK dikelompokkan sebagai arahan Dewan Komisioner; Laporan Singkat Raker/RDP dikelompokkan sebagai hasil rapat dengan Komisi XI DPR RI, dengan rujukan disposisi ADK di SIPENA sebagai dasar penugasan satker.');
   const cats = ['RDK', 'KXI', 'LAIN'].map(k => { const l = plans.filter(a => srcCategory(a) === k); return { k, l, d: l.filter(a => dkStatus(a) === 'Selesai').length }; }).filter(c => c.l.length);
   table(['Sumber', 'Total', 'Dalam Proses', 'Selesai', '% Selesai', 'Terlambat', 'Tertinggal'], cats.map(c => [SRC_LABEL[c.k], c.l.length, c.l.length - c.d, c.d, Math.round(c.d / c.l.length * 100) + '%', c.l.filter(isLate).length, c.l.filter(a => trackStatus(a)?.st === 'Tertinggal').length]),
     ['*', 13, 20, 14, 16, 17, 17], { right: [1, 2, 3, 4, 5, 6] });

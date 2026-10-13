@@ -24,16 +24,17 @@ async function processDocument(doc, onStage, onLog) {
   doc.ocr_accuracy = ocr.accuracy;
   log(`[ocr] Selesai · akurasi rata-rata ${ocr.accuracy}%`, true);
   const tx = await api.extractText(doc, p => onStage(2, p));
-  log(`[text] Normalisasi teks, ${tx.paragraphs} paragraf, deteksi struktur ${isDprDoc(doc) ? '"KESIMPULAN/KEPUTUSAN"' : '"Pokok-pokok Arahan"'}`, true);
+  log(`[text] Normalisasi teks, ${tx.paragraphs} paragraf, deteksi struktur ${isDprDoc(doc) ? '"KESIMPULAN/KEPUTUSAN"' : isKrdkDoc(doc) ? '"KEPUTUSAN" dan "ARAHAN"' : '"Pokok-pokok Arahan"'}`, true);
   log('[llm] Skema keluaran: arahan_rdk.v2 (9 field + usulan atensi + usulan target)');
   let said = false;
-  const items = await api.structureWithLLM(doc, p => { onStage(3, p); if (p > .55 && !said) { said = true; log(isDprDoc(doc) ? '[llm] Memecah butir Kesimpulan/Keputusan menjadi poin tindak lanjut (satker tidak dibaca dari laporan singkat)' : '[llm] Memetakan bidang dan satker penanggung jawab ke master data'); } });
+  const items = await api.structureWithLLM(doc, p => { onStage(3, p); if (p > .55 && !said) { said = true; log(isKrdkDoc(doc) ? '[llm] Membaca bagian ARAHAN: penerima arahan → satker, isi arahan → poin' : isDprDoc(doc) ? '[llm] Memecah butir Kesimpulan/Keputusan menjadi poin tindak lanjut (satker tidak dibaca dari laporan singkat)' : '[llm] Memetakan bidang dan satker penanggung jawab ke master data'); } });
   log(`[llm] ${items.length} poin arahan teridentifikasi`, true);
   if (isDprDoc(doc)) { const mt = dprMeta(doc); log(`[ocr] Identitas rapat: Rapat ke-${mt.rapatKe} · ${mt.jenisRapat} · TS ${mt.tahunSidang} · Masa Persidangan ${mt.masaSidang}`); log('[llm] Membaca bagian KESIMPULAN/KEPUTUSAN · 1 butir bukan permintaan tindak lanjut dilewati', true); applyDispositionToItems(doc, items, log); }
-  items.forEach((it, i) => log(isDprDoc(doc) ? `[sipena] #${i + 1} → ${it.satker ? satkerShort(it.satker) + ' (disposisi ' + it.dispNo + ')' : 'perlu dipetakan MRDK ke tujuan disposisi'}${it.mapAuto ? ' · pemetaan awal, perlu dicek MRDK' : ''}` : `[llm]  #${i + 1} → ${it.satker || 'satker belum teridentifikasi'} (${Math.round((it.conf.satker || .8) * 100)}%)`));
+  if (isKrdkDoc(doc)) applyKrdkStructure(doc, items, log);
+  else items.forEach((it, i) => log(isDprDoc(doc) ? `[sipena] #${i + 1} → ${it.satker ? satkerShort(it.satker) + ' (disposisi ' + it.dispNo + ')' : 'perlu dipetakan MRDK ke tujuan disposisi'}${it.mapAuto ? ' · pemetaan awal, perlu dicek MRDK' : ''}` : `[llm]  #${i + 1} → ${it.satker || 'satker belum teridentifikasi'} (${Math.round((it.conf.satker || .8) * 100)}%)`));
   doc.ocr_status = 'Selesai'; doc.document_status = 'Selesai'; doc.extraction_status = 'Perlu Review';
   doc.topic = items[0]?.topic || doc.topic;
-  doc.extraction = { runAt: new Date().toISOString(), model: 'SI-RDK Extractor v2 (simulasi)', items };
+  doc.extraction = { runAt: new Date().toISOString(), model: 'SI-RDK Extractor v2 (simulasi)', items, ...(doc._krdkKeputusan ? { keputusan: doc._krdkKeputusan } : {}) }; delete doc._krdkKeputusan;
   audit('Ekstraksi Dokumen', doc.document_id, prev, 'Perlu Review', `${items.length} poin arahan teridentifikasi · akurasi OCR ${ocr.accuracy}%`);
   return items;
 }
@@ -47,7 +48,7 @@ function openProcessModal(docId, { rerun = false } = {}) {
     body: `<div class="proc-stages">${stages.map((s, i) => `<div class="proc-stage" id="ps-${i}"><span class="st-ic"></span><span>${s.label}</span><span class="pct">—</span></div>`).join('')}</div>
       <div class="proc-bar"><i id="proc-fill"></i></div><div class="small muted" style="display:flex;justify-content:space-between"><span id="proc-label">Menyiapkan…</span><span class="tnum" id="proc-pct">0%</span></div>
       <div class="proc-log" id="proc-log"></div>`,
-    foot: [{ label: 'Tinjau Hasil Ekstraksi', cls: 'primary', icon: 'arrowRight', id: 'proc-done', onClick: mm => { mm.close(); ui.ocr.doc = docId; ui.ocr.edit = false; if (ui.route === 'ocr') renderPage(true); else go('ocr', { doc: docId }); } }]
+    foot: [{ label: 'Tinjau Hasil Ekstraksi', cls: 'primary', icon: 'arrowRight', id: 'proc-done', onClick: mm => { mm.close(); ui.ocr.doc = docId; ui.ocr.edit = false; ui.params = { ...ui.params, doc: docId }; if (ui.route === 'ocr') renderPage(true); else go('ocr', { doc: docId }); } }]
   });
   const doneBtn = $('#proc-done', m.el); doneBtn.disabled = true;
   const setStage = (idx, p) => {
@@ -176,7 +177,7 @@ registerPage('documents', {
             <div class="form-grid">
               <div class="field"><label for="up-source">Sumber</label><select class="select" id="up-source">${ms.sources.map(s => `<option ${s === m.source ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></div>
               <div class="field"><label for="up-type">Jenis Dokumen</label><select class="select" id="up-type">${ms.types.map(s => `<option ${s === m.type ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></div>
-              <div class="field"><label for="up-number">Nomor Dokumen</label><input class="input" id="up-number" placeholder="mis. No. 34/RDK/2026" value="${esc(m.number || '')}"></div>
+              <div class="field"><label for="up-number">Nomor Dokumen</label><input class="input" id="up-number" placeholder="mis. No. 34/KRDK/2026" value="${esc(m.number || '')}"></div>
               <div class="field"><label for="up-date">Tanggal Dokumen</label><input class="input" type="date" id="up-date" value="${esc(m.date || todayISO())}"></div>
             </div>
             <label class="dropzone" id="dropzone" for="file-input" tabindex="0">
@@ -267,6 +268,7 @@ function pickOcrDoc() {
 }
 function paperHTML(doc) {
   if (isDprDoc(doc)) return dprPaperHTML(doc);
+  if (isKrdkDoc(doc)) return krdkPaperHTML(doc);
   const items = doc.extraction?.items || [];
   const done = doc.ocr_status === 'Selesai' && items.length;
   const rdk = items[0]?.rdkDate || doc.document_date;
@@ -287,6 +289,7 @@ function paperHTML(doc) {
 }
 function ocrRawText(doc) {
   if (isDprDoc(doc)) return dprRawText(doc);
+  if (isKrdkDoc(doc)) return krdkRawText(doc);
   const items = doc.extraction?.items || [];
   if (doc.ocr_status !== 'Selesai') return 'Dokumen belum melalui proses OCR.\nKlik "Process Document" untuk menjalankan OCR dan ekstraksi.';
   return [`--- halaman 1/${doc.pages} ---`, 'OTORITAS JASA KEUANGAN', 'REPUBLIK INDONESIA', '', doc.document_type.toUpperCase(), doc.document_number || '', '',
@@ -308,7 +311,8 @@ function exDispNote(it, doc) {
 function exItemHTML(it, i, edit, doc) {
   const sats = appState.masters.satker; const bidangs = bidangList().map(b => b.name);
   const dpr = isDprDoc(doc);
-  const srcTag = k => !dpr ? '' : k === 'arahan' ? ' <span class="src-tag">Sumber: Laporan Singkat</span>' : (k === 'satker' || k === 'bidang') ? ' <span class="src-tag sp">Sumber: Disposisi SIPENA</span>' : '';
+  const krdk = isKrdkDoc(doc);
+  const srcTag = k => krdk ? (k === 'arahan' ? ' <span class="src-tag">Sumber: Arahan KRDK</span>' : (k === 'satker' || k === 'bidang') ? ' <span class="src-tag">Dari penerima arahan</span>' : '') : !dpr ? '' : k === 'arahan' ? ' <span class="src-tag">Sumber: Laporan Singkat</span>' : (k === 'satker' || k === 'bidang') ? ' <span class="src-tag sp">Sumber: Disposisi SIPENA</span>' : '';
   const ro = (k, v) => `<div class="dl ${k === 'arahan' || k === 'tindakLanjut' || k === 'topic' ? 'span-2' : ''}"><dt>${EX_FIELDS.find(f => f[0] === k)[1]} ${dpr && (k === 'satker' || k === 'bidang') ? '' : confTag(it.conf?.[k])}${srcTag(k)}</dt><dd>${v}</dd></div>`;
   const inp = (k, html) => `<div class="field ${k === 'arahan' || k === 'tindakLanjut' || k === 'topic' ? 'span-2' : ''}"><label for="ex-${i}-${k}">${EX_FIELDS.find(f => f[0] === k)[1]}${srcTag(k)}</label>${html}</div>`;
   const body = edit ? `<div class="form-grid">
@@ -316,6 +320,7 @@ function exItemHTML(it, i, edit, doc) {
       ${inp('assignmentStatus', `<input class="input" id="ex-${i}-assignmentStatus" value="${esc(it.satker ? 'Sudah Ditugaskan' : 'Belum Ditugaskan')}" disabled>`)}
       ${inp('topic', `<select class="select" id="ex-${i}-topic">${[...new Set([it.topic, ...appState.masters.topics])].map(t => `<option ${t === it.topic ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>`)}
       ${inp('arahan', `<textarea class="textarea" id="ex-${i}-arahan">${esc(it.arahan)}</textarea>`)}
+      ${krdk ? `<div class="field span-2"><label>Penerima arahan (sesuai naskah)</label><input class="input" value="${esc(krdkAddr(it))}" disabled></div>` : ''}
       ${inp('bidang', `<select class="select" id="ex-${i}-bidang"><option value="">— Belum ditetapkan —</option>${bidangs.map(b => `<option ${b === it.bidang ? 'selected' : ''}>${esc(b)}</option>`).join('')}</select>`)}
       ${inp('satker', `<select class="select" id="ex-${i}-satker" data-change="exSatker" data-i="${i}"><option value="">— Belum ditugaskan —</option>${(() => { const tg = doc.sipena ? dispTargets(doc) : []; const opt = s => `<option ${s.name === it.satker ? 'selected' : ''}>${esc(s.name)}</option>`; return tg.length ? `<optgroup label="Tujuan disposisi ADK">${sats.filter(s => tg.includes(s.name)).map(opt).join('')}</optgroup><optgroup label="Di luar disposisi (wajib alasan)">${sats.filter(s => !tg.includes(s.name)).map(opt).join('')}</optgroup>` : sats.map(opt).join(''); })()}</select>`)}
       ${inp('respon', `<input class="input" id="ex-${i}-respon" value="${esc(it.respon)}">`)}
@@ -327,7 +332,8 @@ function exItemHTML(it, i, edit, doc) {
     : `<dl class="dl-grid" style="margin:0">
       ${ro('rdkDate', fmtDateLong(it.rdkDate))}${ro('assignmentStatus', badge(it.satker ? 'Sudah Ditugaskan' : 'Belum Ditugaskan'))}
       ${ro('topic', esc(it.topic))}${ro('arahan', `“${esc(it.arahan)}”`)}
-      ${ro('bidang', esc(it.bidang || '—'))}${ro('satker', (it.satker ? esc(it.satker) : `<span style="color:var(--warn-ink)">${isDprDoc(doc) ? 'Perlu dipetakan ke tujuan disposisi' : 'Belum teridentifikasi'}</span>`) + exDispNote(it, doc))}
+      ${krdk ? `<div class="dl span-2"><dt>Penerima arahan (sesuai naskah) <span class="src-tag">Sumber: Arahan KRDK</span></dt><dd>${esc(krdkAddr(it))}</dd></div>` : ''}
+      ${ro('bidang', esc(it.bidang || '—'))}${ro('satker', (it.satker ? esc(it.satker) : `<span style="color:var(--warn-ink)">${isDprDoc(doc) ? 'Perlu dipetakan ke tujuan disposisi' : isKrdkDoc(doc) ? 'Penerima tingkat bidang — perlu dipetakan MRDK' : 'Belum teridentifikasi'}</span>`) + exDispNote(it, doc))}
       ${ro('respon', esc(it.respon || '—'))}${ro('completedDate', fmtDate(it.completedDate))}
       ${ro('tindakLanjut', esc(it.tindakLanjut || '—'))}
       <div class="dl"><dt>Atensi (usulan)</dt><dd>${prioTag(it.priority)}</dd></div>
@@ -376,7 +382,7 @@ registerPage('ocr', {
               <div class="dl"><dt>Sumber</dt><dd>${esc(doc.source)}</dd></div>
               <div class="dl"><dt>Jenis dokumen</dt><dd>${esc(doc.document_type)}</dd></div>
               <div class="dl"><dt>Diunggah</dt><dd>${esc(doc.uploaded_by)} · ${fmtDT(doc.upload_date)}</dd></div>
-              ${dprInfoHTML(doc)}
+              ${dprInfoHTML(doc)}${krdkInfoHTML(doc)}
               <div class="dl"><dt>OCR</dt><dd>${doc.pages} halaman${doc.ocr_accuracy ? ` · akurasi ${doc.ocr_accuracy.toFixed(1)}%` : ''}</dd></div>
             </dl>${isDprDoc(doc) ? `<div class="section-label" style="margin:14px 0 8px">Disposisi ADK (SIPENA) — dasar penetapan satker</div>${dispListHTML(doc)}` : ''}</div></section>
           <section class="panel"><div class="panel-head"><div><h3>Extracted Information</h3><div class="desc">${processed ? `${items.length} poin arahan · ${esc(doc.extraction.model)} · ${fmtDT(doc.extraction.runAt)}` : 'Belum ada hasil ekstraksi'}</div></div></div>

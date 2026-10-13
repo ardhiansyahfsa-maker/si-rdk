@@ -45,9 +45,14 @@ intensitas pemantauan oleh MRDK, bukan tingkat kepentingan arahan.*
 2. **Satker** mengonfirmasi atau mengajukan koreksi atribut (MRDK menetapkan final).
 3. Satker menyusun **trajectory 4 triwulan** (TW I–IV tahun takwim), lalu **Admin MRDK** menyetujui atau mengembalikan.
 
+## Format Keputusan RDK (KRDK)
+
+Arahan RDK bersumber dari naskah baku **Keputusan Rapat Dewan Komisioner** (No. xx/KRDK/yyyy): Topik · *Keputusan* ("Dewan Komisioner menyetujui …") · *Arahan* ("Dewan Komisioner memberikan arahan kepada: 1. <penerima> untuk …").
+OCR/LLM hanya mengambil bagian **Arahan**: penerima arahan → satker/bidang penanggung jawab, isi arahan → poin arahan. Bagian Keputusan dicatat sebagai konteks dan tidak menjadi poin tindak lanjut. Jika penerima arahan setingkat bidang (mis. Kepala Eksekutif), satker dipetakan oleh MRDK.
+
 ## Integrasi SIPENA — disposisi ADK (simulasi)
 
-Berlaku **khusus Laporan Singkat Raker/RDP dengan Komisi XI DPR RI**. Arahan RDK (Risalah RDK, ND Arahan DK) tidak memakai disposisi.
+Berlaku **khusus Laporan Singkat Raker/RDP dengan Komisi XI DPR RI**. Arahan RDK (Keputusan RDK, ND Arahan DK) tidak memakai disposisi.
 
 1. **Tarik otomatis** — laporan singkat beserta disposisi ADK ditarik dari SIPENA (tombol *Tarik dari SIPENA* di Dokumen Rujukan; produksi: penarikan terjadwal ke `GET /api/sipena/v1/naskah?jenis=lapsing-dpr`). Dokumen tercatat dengan pengunggah "SIPENA (otomatis)" dan nomor agenda SIPENA.
 2. **Dua sumber, dua peran** — *Laporan singkat* menentukan **apa** yang ditindaklanjuti (butir Kesimpulan/Keputusan, dipecah LLM menjadi poin). *Disposisi ADK di SIPENA* menentukan **siapa** yang menyelesaikan (satker). LLM tidak menetapkan satker. Jika disposisi hanya ke satu satker, semua poin otomatis ke satker itu; jika ke beberapa satker, sistem membuat pemetaan awal per poin yang ditandai "perlu dicek MRDK".

@@ -107,7 +107,7 @@ const ui = {
   ver: { tab: 'Menunggu Verifikasi', q: '' },
   audit: { q: '', action: '', role: '', from: '', to: '', view: 'timeline', limit: 60 },
   ocr: { doc: null, edit: false, view: 'preview' },
-  uploads: [], uploadMeta: { source: 'Rapat Dewan Komisioner', type: 'Risalah RDK' }
+  uploads: [], uploadMeta: { source: 'Rapat Dewan Komisioner', type: 'Keputusan RDK' }
 };
 const charts = {};
 let storageOK = true;

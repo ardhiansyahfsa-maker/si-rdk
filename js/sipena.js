@@ -8,7 +8,7 @@
    · Penugasan ke satker di luar tujuan disposisi ditandai dan wajib beralasan.
    Prototipe: penarikan disimulasikan (api.pullSipena); kontrak data mengikuti
    SIPENA_CONTRACT sehingga dapat diganti panggilan API SIPENA sebenarnya.
-   Arahan RDK (Risalah RDK / ND Arahan DK) tidak memakai disposisi SIPENA.
+   Arahan RDK (Keputusan RDK / ND Arahan DK) tidak memakai disposisi SIPENA.
    ========================================================================= */
 
 const SIPENA_ENDPOINT = 'GET /api/sipena/v1/naskah?jenis=lapsing-dpr&sejak={last_pull}';
