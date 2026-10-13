@@ -5,7 +5,7 @@
    opened, so "Terlambat" and "mendekati deadline" stay meaningful in demos.
    ========================================================================= */
 
-const SEED_VERSION = 12;
+const SEED_VERSION = 13;
 
 const ROLE_LABEL = { admin: 'Admin / MRDK', satker: 'Satker Pelaksana', viewer: 'Pimpinan' };
 
@@ -22,12 +22,57 @@ const MASTER_BIDANG = [
 ];
 
 const MASTER_SATKER = [
-  { key: 'DMC', name: 'Direktorat Market Conduct', bidang: 'Pengawasan Perilaku Pelaku Usaha Jasa Keuangan dan Pelindungan Konsumen', pic: 'Budi Santoso' },
-  { key: 'DPB', name: 'Departemen Pengawasan Bank', bidang: 'Pengawasan Perbankan', pic: 'Sari Indrawati' },
-  { key: 'DPPM', name: 'Departemen Pengawasan Pasar Modal', bidang: 'Pengawasan Pasar Modal, Keuangan Derivatif, dan Bursa Karbon', pic: 'Arief Rahman' },
-  { key: 'DIKNB', name: 'Departemen Pengawasan Asuransi dan Dana Pensiun', bidang: 'Pengawasan Perusahaan Asuransi dan Dana Pensiun', pic: 'Maya Kusuma' },
-  { key: 'DLIK', name: 'Departemen Literasi dan Inklusi Keuangan', bidang: 'Pengawasan Perilaku Pelaku Usaha Jasa Keuangan dan Pelindungan Konsumen', pic: 'Dimas Prasetyo' },
-  { key: 'DITSK', name: 'Departemen Pengawasan ITSK dan Aset Kripto', bidang: 'Inovasi Teknologi Sektor Keuangan, Aset Keuangan Digital, Aset Kripto', pic: 'Nadia Putri' }
+  { key: 'DSKT', name: 'Departemen Surveillance dan Kebijakan Sektor Jasa Keuangan Terintegrasi', bidang: 'Kebijakan Strategis, Audit Internal, dan Manajemen Risiko', pic: 'PIC DSKT' },
+  { key: 'DPZT', name: 'Departemen Koordinasi Pengawasan dan Perizinan Terintegrasi', bidang: 'Kebijakan Strategis, Audit Internal, dan Manajemen Risiko', pic: 'PIC DPZT' },
+  { key: 'DPDS', name: 'Departemen Pengelolaan Data dan Statistik', bidang: 'Kebijakan Strategis, Audit Internal, dan Manajemen Risiko', pic: 'PIC DPDS' },
+  { key: 'DINP', name: 'Departemen Internasional dan APU-PPT', bidang: 'Kebijakan Strategis, Audit Internal, dan Manajemen Risiko', pic: 'PIC DINP' },
+  { key: 'DOSB', name: 'Departemen Organisasi, SDM, dan Budaya', bidang: 'Kebijakan Strategis, Audit Internal, dan Manajemen Risiko', pic: 'PIC DOSB' },
+  { key: 'OJKI', name: 'OJK Institute', bidang: 'Kebijakan Strategis, Audit Internal, dan Manajemen Risiko', pic: 'PIC OJKI' },
+  { key: 'DPAI', name: 'Departemen Audit Internal', bidang: 'Kebijakan Strategis, Audit Internal, dan Manajemen Risiko', pic: 'PIC DPAI' },
+  { key: 'DRPK', name: 'Departemen Manajemen Risiko dan Pengendalian Kualitas', bidang: 'Kebijakan Strategis, Audit Internal, dan Manajemen Risiko', pic: 'PIC DRPK' },
+  { key: 'DPIK', name: 'Departemen Penegakan Integritas dan Audit Khusus', bidang: 'Kebijakan Strategis, Audit Internal, dan Manajemen Risiko', pic: 'PIC DPIK' },
+  { key: 'DMND', name: 'Departemen Manajemen dan Pengembangan OJK Daerah', bidang: 'Manajemen Strategis', pic: 'PIC DMND' },
+  { key: 'DPSI', name: 'Departemen Pengelolaan Sistem Informasi', bidang: 'Manajemen Strategis', pic: 'PIC DPSI' },
+  { key: 'DPEA', name: 'Departemen Pengembangan Aplikasi', bidang: 'Manajemen Strategis', pic: 'PIC DPEA' },
+  { key: 'UKTF', name: 'Unit Khusus Transformasi', bidang: 'Manajemen Strategis', pic: 'PIC UKTF' },
+  { key: 'DPSU', name: 'Departemen Perencanaan Strategis dan Keuangan', bidang: 'Manajemen Strategis', pic: 'PIC DPSU' },
+  { key: 'DSHK', name: 'Departemen Sekretariat Dewan Komisioner dan Hubungan Kelembagaan', bidang: 'Manajemen Strategis', pic: 'PIC DSHK' },
+  { key: 'DLOG', name: 'Departemen Logistik', bidang: 'Manajemen Strategis', pic: 'PIC DLOG' },
+  { key: 'DHUK', name: 'Departemen Hukum', bidang: 'Manajemen Strategis', pic: 'PIC DHUK' },
+  { key: 'DPJK', name: 'Departemen Penyidikan Sektor Jasa Keuangan', bidang: 'Manajemen Strategis', pic: 'PIC DPJK' },
+  { key: 'DPNP', name: 'Departemen Pengaturan dan Pengembangan Perbankan', bidang: 'Pengawasan Perbankan', pic: 'PIC DPNP' },
+  { key: 'DPKP', name: 'Departemen Pengendalian Kualitas dan Pengembangan Pengawasan Perbankan', bidang: 'Pengawasan Perbankan', pic: 'Lina Marlina' },
+  { key: 'DIMB', name: 'Departemen Perizinan dan Manajemen Krisis Perbankan', bidang: 'Pengawasan Perbankan', pic: 'PIC DIMB' },
+  { key: 'DPMS', name: 'Departemen Pengaturan dan Pengembangan UMKM dan Keuangan Syariah', bidang: 'Pengawasan Perbankan', pic: 'PIC DPMS' },
+  { key: 'DPBP', name: 'Departemen Pengawasan Bank Pemerintah', bidang: 'Pengawasan Perbankan', pic: 'PIC DPBP' },
+  { key: 'DPBS', name: 'Departemen Pengawasan Bank Syariah', bidang: 'Pengawasan Perbankan', pic: 'PIC DPBS' },
+  { key: 'DRPD', name: 'Departemen Pemeriksaan Khusus dan Pengawasan Perbankan Daerah', bidang: 'Pengawasan Perbankan', pic: 'PIC DRPD' },
+  { key: 'DPKO', name: 'Departemen Pengawasan Konglomerasi Keuangan', bidang: 'Pengawasan Perbankan', pic: 'PIC DPKO' },
+  { key: 'DPW1', name: 'Departemen Pengawasan Bank Swasta 1', bidang: 'Pengawasan Perbankan', pic: 'Sari Indrawati' },
+  { key: 'DPW2', name: 'Departemen Pengawasan Bank Swasta 2', bidang: 'Pengawasan Perbankan', pic: 'PIC DPW2' },
+  { key: 'DPPM', name: 'Departemen Pengaturan dan Pengembangan Pasar Modal, Keuangan Derivatif dan Bursa Karbon', bidang: 'Pengawasan Pasar Modal, Keuangan Derivatif, dan Bursa Karbon', pic: 'Arief Rahman' },
+  { key: 'DPZP', name: 'Departemen Perizinan Kelembagaan dan Profesi Pelaku', bidang: 'Pengawasan Pasar Modal, Keuangan Derivatif, dan Bursa Karbon', pic: 'PIC DPZP' },
+  { key: 'DPVR', name: 'Departemen Pengawasan Pengelolaan Investasi dan Pasar Modal Regional', bidang: 'Pengawasan Pasar Modal, Keuangan Derivatif, dan Bursa Karbon', pic: 'PIC DPVR' },
+  { key: 'DPLE', name: 'Departemen Pengawasan Lembaga Efek', bidang: 'Pengawasan Pasar Modal, Keuangan Derivatif, dan Bursa Karbon', pic: 'PIC DPLE' },
+  { key: 'DNEK', name: 'Departemen Penilaian Emiten, Perusahaan Publik, dan Perizinan Keuangan Derivatif dan Bursa Karbon', bidang: 'Pengawasan Pasar Modal, Keuangan Derivatif, dan Bursa Karbon', pic: 'PIC DNEK' },
+  { key: 'DPEP', name: 'Departemen Pengawasan Emiten dan Perusahaan Publik', bidang: 'Pengawasan Pasar Modal, Keuangan Derivatif, dan Bursa Karbon', pic: 'PIC DPEP' },
+  { key: 'DPTP', name: 'Departemen Pengawasan Keuangan Derivatif, Bursa Karbon, Transaksi Efek dan Pemeriksaan Khusus', bidang: 'Pengawasan Pasar Modal, Keuangan Derivatif, dan Bursa Karbon', pic: 'PIC DPTP' },
+  { key: 'DPPP', name: 'Departemen Pengaturan dan Pengembangan Perasuransian, Penjaminan dan Dana Pensiun', bidang: 'Pengawasan Perusahaan Asuransi dan Dana Pensiun', pic: 'PIC DPPP' },
+  { key: 'DIPD', name: 'Departemen Perizinan, Pemeriksaan Khusus dan Pengendalian Kualitas Pengawasan Perasuransian, Penjaminan dan Dana Pensiun', bidang: 'Pengawasan Perusahaan Asuransi dan Dana Pensiun', pic: 'PIC DIPD' },
+  { key: 'DAKR', name: 'Departemen Aktuaria', bidang: 'Pengawasan Perusahaan Asuransi dan Dana Pensiun', pic: 'PIC DAKR' },
+  { key: 'DAJP', name: 'Departemen Pengawasan Asuransi dan Jasa Penunjang', bidang: 'Pengawasan Perusahaan Asuransi dan Dana Pensiun', pic: 'Maya Kusuma' },
+  { key: 'DPDK', name: 'Departemen Pengawasan Penjaminan, Dana Pensiun dan Pengawasan Khusus', bidang: 'Pengawasan Perusahaan Asuransi dan Dana Pensiun', pic: 'PIC DPDK' },
+  { key: 'DPPL', name: 'Departemen Pengaturan dan Pengembangan Lembaga Pembiayaan, Perusahaan Modal Ventura, Lembaga Keuangan Mikro dan Lembaga Jasa Keuangan Lainnya', bidang: 'Pengawasan Perusahaan Pembiayaan, Modal Ventura, Keuangan Mikro, dan Lembaga Jasa Keuangan Lainnya', pic: 'PIC DPPL' },
+  { key: 'DZPL', name: 'Departemen Perizinan, Pemeriksaan Khusus dan Pengendalian Kualitas Pengawasan Lembaga Pembiayaan, Perusahaan Modal Ventura, Lembaga Keuangan Mikro dan Lembaga Jasa Keuangan Lainnya', bidang: 'Pengawasan Perusahaan Pembiayaan, Modal Ventura, Keuangan Mikro, dan Lembaga Jasa Keuangan Lainnya', pic: 'PIC DZPL' },
+  { key: 'DPVL', name: 'Departemen Pengawasan Lembaga Pembiayaan, Perusahaan Modal Ventura dan Lembaga Keuangan Khusus', bidang: 'Pengawasan Perusahaan Pembiayaan, Modal Ventura, Keuangan Mikro, dan Lembaga Jasa Keuangan Lainnya', pic: 'PIC DPVL' },
+  { key: 'DPLJ', name: 'Departemen Pengawasan Lembaga Keuangan Mikro dan Lembaga Jasa Keuangan Lainnya', bidang: 'Pengawasan Perusahaan Pembiayaan, Modal Ventura, Keuangan Mikro, dan Lembaga Jasa Keuangan Lainnya', pic: 'PIC DPLJ' },
+  { key: 'DPIA', name: 'Departemen Pengaturan dan Perizinan Inovasi Teknologi Sektor Keuangan, Aset Keuangan Digital dan Aset Kripto', bidang: 'Inovasi Teknologi Sektor Keuangan, Aset Keuangan Digital, Aset Kripto', pic: 'PIC DPIA' },
+  { key: 'DPIR', name: 'Departemen Pengawasan Inovasi Teknologi Sektor Keuangan, Aset Keuangan Digital dan Aset Kripto', bidang: 'Inovasi Teknologi Sektor Keuangan, Aset Keuangan Digital, Aset Kripto', pic: 'Nadia Putri' },
+  { key: 'DPLK', name: 'Departemen Pelindungan Konsumen', bidang: 'Pengawasan Perilaku Pelaku Usaha Jasa Keuangan dan Pelindungan Konsumen', pic: 'PIC DPLK' },
+  { key: 'DPUK', name: 'Departemen Pengawasan Perilaku Pelaku Usaha Jasa Keuangan', bidang: 'Pengawasan Perilaku Pelaku Usaha Jasa Keuangan dan Pelindungan Konsumen', pic: 'Budi Santoso' },
+  { key: 'DLIK', name: 'Departemen Literasi, Inklusi Keuangan, dan Komunikasi', bidang: 'Pengawasan Perilaku Pelaku Usaha Jasa Keuangan dan Pelindungan Konsumen', pic: 'Dimas Prasetyo' },
+  { key: 'DPBK', name: 'Departemen Pengawasan Lembaga dan Transaksi Bursa Mineral dan Komoditas Strategis', bidang: 'Pengawasan Bursa Mineral dan Komoditas Strategis', pic: 'PIC DPBK' },
+  { key: 'DPPK', name: 'Departemen Pengaturan dan Perizinan Bursa Mineral dan Komoditas Strategis', bidang: 'Pengawasan Bursa Mineral dan Komoditas Strategis', pic: 'PIC DPPK' }
 ];
 
 const MASTER_TOPICS = [
@@ -48,10 +93,10 @@ const DOC_TYPES = ['Risalah RDK', 'Laporan Singkat RDP', 'Laporan Singkat Raker'
 
 const DEMO_USERS = [
   { username: 'admin', password: 'admin123', name: 'Ardhiansyah K', role: 'admin', satker: null, title: 'Manajer Senior MRDK', active: true },
-  { username: 'satker', password: 'satker123', name: 'Budi Santoso', role: 'satker', satker: 'Direktorat Market Conduct', title: 'PIC Direktorat Market Conduct', active: true },
+  { username: 'satker', password: 'satker123', name: 'Budi Santoso', role: 'satker', satker: 'Departemen Pengawasan Perilaku Pelaku Usaha Jasa Keuangan', title: 'PIC Departemen Pengawasan Perilaku Pelaku Usaha Jasa Keuangan', active: true },
   { username: 'viewer', password: 'viewer123', name: 'Hendra Gunawan', role: 'viewer', satker: null, title: 'Kepala Eksekutif', active: true },
-  { username: 'satker.dpb', password: 'satker123', name: 'Sari Indrawati', role: 'satker', satker: 'Departemen Pengawasan Bank', title: 'PIC Departemen Pengawasan Bank', active: true },
-  { username: 'satker.dlik', password: 'satker123', name: 'Dimas Prasetyo', role: 'satker', satker: 'Departemen Literasi dan Inklusi Keuangan', title: 'PIC Departemen Literasi dan Inklusi Keuangan', active: true },
+  { username: 'satker.dpw1', password: 'satker123', name: 'Sari Indrawati', role: 'satker', satker: 'Departemen Pengawasan Bank Swasta 1', title: 'PIC Departemen Pengawasan Bank Swasta 1', active: true },
+  { username: 'satker.dlik', password: 'satker123', name: 'Dimas Prasetyo', role: 'satker', satker: 'Departemen Literasi, Inklusi Keuangan, dan Komunikasi', title: 'PIC Departemen Literasi, Inklusi Keuangan, dan Komunikasi', active: true },
   { username: 'mrdk.2', password: 'admin123', name: 'Yoga Pratama', role: 'admin', satker: null, title: 'Staf MRDK', active: false }
 ];
 
@@ -64,24 +109,24 @@ const EXTRACTION_LIBRARY = {
     rdkDate: '2026-09-15',
     topic: 'Penguatan Pengawasan dan Perlindungan Konsumen',
     items: [
-      { arahan: 'Memperkuat mekanisme pengawasan terhadap aktivitas jasa keuangan digital dan meningkatkan perlindungan konsumen.', satker: 'Direktorat Market Conduct', tindakLanjut: 'Pengembangan mekanisme monitoring dan evaluasi.', priority: 'Tinggi', days: 90 },
-      { arahan: 'Melakukan evaluasi atas efektivitas penanganan pengaduan konsumen pada PUJK sektor perbankan.', satker: 'Departemen Pengawasan Bank', tindakLanjut: 'Penyusunan kerangka evaluasi dan pengumpulan data pengaduan.', priority: 'Sedang', days: 120 },
+      { arahan: 'Memperkuat mekanisme pengawasan terhadap aktivitas jasa keuangan digital dan meningkatkan perlindungan konsumen.', satker: 'Departemen Pengawasan Perilaku Pelaku Usaha Jasa Keuangan', tindakLanjut: 'Pengembangan mekanisme monitoring dan evaluasi.', priority: 'Tinggi', days: 90 },
+      { arahan: 'Melakukan evaluasi atas efektivitas penanganan pengaduan konsumen pada PUJK sektor perbankan.', satker: 'Departemen Pelindungan Konsumen', tindakLanjut: 'Penyusunan kerangka evaluasi dan pengumpulan data pengaduan.', priority: 'Sedang', days: 120 },
       { arahan: 'Menyusun kajian kebutuhan pengaturan atas layanan Buy Now Pay Later (BNPL) dan paylater perbankan.', satker: '', bidang: 'Pengawasan Perusahaan Pembiayaan, Modal Ventura, Keuangan Mikro, dan Lembaga Jasa Keuangan Lainnya', tindakLanjut: 'Menunggu penetapan satker penanggung jawab.', priority: 'Sedang', days: 150 }
     ]
   },
   asuransi: {
     topic: 'Penguatan Tata Kelola Asuransi',
     items: [
-      { arahan: 'Mempercepat penyelesaian klaim pemegang polis pada perusahaan asuransi bermasalah dan memastikan transparansi informasi kepada konsumen.', satker: 'Departemen Pengawasan Asuransi dan Dana Pensiun', tindakLanjut: 'Penyusunan rencana penyelesaian klaim dan publikasi status penanganan.', priority: 'Tinggi', days: 60 },
-      { arahan: 'Memperketat pengawasan produk asuransi yang dikaitkan dengan investasi (PAYDI), termasuk pemasaran melalui bancassurance.', satker: 'Departemen Pengawasan Asuransi dan Dana Pensiun', tindakLanjut: 'Pemeriksaan tematik pemasaran PAYDI pada bank mitra.', priority: 'Tinggi', days: 90 },
-      { arahan: 'Meningkatkan edukasi kepada masyarakat mengenai hak dan kewajiban pemegang polis.', satker: 'Departemen Literasi dan Inklusi Keuangan', tindakLanjut: 'Penyusunan materi edukasi dan kampanye digital.', priority: 'Sedang', days: 120 }
+      { arahan: 'Mempercepat penyelesaian klaim pemegang polis pada perusahaan asuransi bermasalah dan memastikan transparansi informasi kepada konsumen.', satker: 'Departemen Pengawasan Asuransi dan Jasa Penunjang', tindakLanjut: 'Penyusunan rencana penyelesaian klaim dan publikasi status penanganan.', priority: 'Tinggi', days: 60 },
+      { arahan: 'Memperketat pengawasan produk asuransi yang dikaitkan dengan investasi (PAYDI), termasuk pemasaran melalui bancassurance.', satker: 'Departemen Pengawasan Asuransi dan Jasa Penunjang', tindakLanjut: 'Pemeriksaan tematik pemasaran PAYDI pada bank mitra.', priority: 'Tinggi', days: 90 },
+      { arahan: 'Meningkatkan edukasi kepada masyarakat mengenai hak dan kewajiban pemegang polis.', satker: 'Departemen Literasi, Inklusi Keuangan, dan Komunikasi', tindakLanjut: 'Penyusunan materi edukasi dan kampanye digital.', priority: 'Sedang', days: 120 }
     ]
   },
   bank: {
     topic: 'Transformasi Digital Perbankan',
     items: [
-      { arahan: 'Memperkuat ketahanan siber dan manajemen risiko teknologi informasi pada bank digital.', satker: 'Departemen Pengawasan Bank', tindakLanjut: 'Asesmen maturitas keamanan siber pada bank digital.', priority: 'Tinggi', days: 75 },
-      { arahan: 'Menyusun pengaturan layanan perbankan berbasis open API serta pelindungan data nasabah.', satker: 'Departemen Pengawasan ITSK dan Aset Kripto', tindakLanjut: 'Penyusunan naskah akademik pengaturan open API.', priority: 'Sedang', days: 150 },
+      { arahan: 'Memperkuat ketahanan siber dan manajemen risiko teknologi informasi pada bank digital.', satker: 'Departemen Pengendalian Kualitas dan Pengembangan Pengawasan Perbankan', tindakLanjut: 'Asesmen maturitas keamanan siber pada bank digital.', priority: 'Tinggi', days: 75 },
+      { arahan: 'Menyusun pengaturan layanan perbankan berbasis open API serta pelindungan data nasabah.', satker: 'Departemen Pengaturan dan Perizinan Inovasi Teknologi Sektor Keuangan, Aset Keuangan Digital dan Aset Kripto', tindakLanjut: 'Penyusunan naskah akademik pengaturan open API.', priority: 'Sedang', days: 150 },
       { arahan: 'Melakukan asesmen kesiapan BPR dalam implementasi digitalisasi layanan.', satker: '', bidang: 'Pengawasan Perbankan', tindakLanjut: 'Menunggu penetapan satker penanggung jawab.', priority: 'Rendah', days: 180 }
     ]
   }
@@ -140,31 +185,43 @@ function buildSeed() {
 
   // [docIdx, satkerKey|null, arahan, progress, verification, targetOffset, priority, lastUpdateOffset, extra]
   const P = [
-    [1, 'DMC', 'Memperkuat mekanisme pengawasan terhadap aktivitas jasa keuangan digital dan meningkatkan perlindungan konsumen.', 40, 'Menunggu Verifikasi', 40, 'Tinggi', -2, { prev: 20, tl: 'Pengembangan mekanisme monitoring dan evaluasi; penyusunan draf indikator pengawasan perilaku PUJK digital.', out: 'Draf kerangka monitoring market conduct digital (v0.4)', kd: 'Integrasi data pengaduan dari APPK belum real-time.' }],
-    [1, 'DMC', 'Menyusun pedoman penanganan pengaduan konsumen lintas sektor yang terintegrasi dengan Aplikasi Portal Pelindungan Konsumen (APPK).', 100, 'Disetujui', 10, 'Tinggi', -8, { prev: 70, done: -8, tl: 'Pedoman telah ditetapkan melalui Keputusan Anggota Dewan Komisioner dan disosialisasikan ke PUJK.', out: 'KADK Pedoman Penanganan Pengaduan Terintegrasi', vn: 'Sesuai. Dokumen penetapan telah dilampirkan.' }],
-    [1, 'DPB', 'Melakukan thematic review atas praktik penagihan kredit oleh bank umum, termasuk penggunaan pihak ketiga.', 55, 'Belum Diverifikasi', 35, 'Sedang', -4, { tl: 'Thematic review pada 12 bank umum; 7 bank telah selesai diperiksa.', out: 'Kertas kerja thematic review', kd: 'Keterbatasan jumlah pemeriksa di Kantor Regional.' }],
-    [2, 'DIKNB', 'Menyampaikan laporan tindak lanjut rekomendasi Komisi XI atas penanganan perusahaan asuransi jiwa bermasalah.', 55, 'Menunggu Verifikasi', 12, 'Tinggi', -1, { prev: 35, tl: 'Penyusunan laporan progres penanganan 4 perusahaan asuransi jiwa dalam pengawasan khusus.', out: 'Draf laporan tindak lanjut kepada Komisi XI', kd: 'Menunggu data dari likuidator untuk 1 perusahaan.' }],
-    [2, 'DPB', 'Meningkatkan efektivitas pengawasan terhadap BPR/BPRS dengan rasio permodalan di bawah ketentuan.', 70, 'Disetujui', 20, 'Tinggi', -10, { prev: 45, tl: 'Penetapan 18 BPR dalam pengawasan intensif dan penyusunan rencana tindak penyehatan.', out: 'Daftar BPR pengawasan intensif dan rencana penyehatan', vn: 'Progres disetujui. Lanjutkan pemantauan rencana penyehatan.' }],
+    [1, 'DPUK', 'Memperkuat mekanisme pengawasan terhadap aktivitas jasa keuangan digital dan meningkatkan perlindungan konsumen.', 40, 'Menunggu Verifikasi', 40, 'Tinggi', -2, { prev: 20, tl: 'Pengembangan mekanisme monitoring dan evaluasi; penyusunan draf indikator pengawasan perilaku PUJK digital.', out: 'Draf kerangka monitoring market conduct digital (v0.4)', kd: 'Integrasi data pengaduan dari APPK belum real-time.' }],
+    [1, 'DPLK', 'Menyusun pedoman penanganan pengaduan konsumen lintas sektor yang terintegrasi dengan Aplikasi Portal Pelindungan Konsumen (APPK).', 100, 'Disetujui', 10, 'Tinggi', -8, { prev: 70, done: -8, tl: 'Pedoman telah ditetapkan melalui Keputusan Anggota Dewan Komisioner dan disosialisasikan ke PUJK.', out: 'KADK Pedoman Penanganan Pengaduan Terintegrasi', vn: 'Sesuai. Dokumen penetapan telah dilampirkan.' }],
+    [1, 'DPW1', 'Melakukan thematic review atas praktik penagihan kredit oleh bank umum, termasuk penggunaan pihak ketiga.', 55, 'Belum Diverifikasi', 35, 'Sedang', -4, { tl: 'Thematic review pada 12 bank umum; 7 bank telah selesai diperiksa.', out: 'Kertas kerja thematic review', kd: 'Keterbatasan jumlah pemeriksa di Kantor Regional.' }],
+    [2, 'DAJP', 'Menyampaikan laporan tindak lanjut rekomendasi Komisi XI atas penanganan perusahaan asuransi jiwa bermasalah.', 55, 'Menunggu Verifikasi', 12, 'Tinggi', -1, { prev: 35, tl: 'Penyusunan laporan progres penanganan 4 perusahaan asuransi jiwa dalam pengawasan khusus.', out: 'Draf laporan tindak lanjut kepada Komisi XI', kd: 'Menunggu data dari likuidator untuk 1 perusahaan.' }],
+    [2, 'DRPD', 'Meningkatkan efektivitas pengawasan terhadap BPR/BPRS dengan rasio permodalan di bawah ketentuan.', 70, 'Disetujui', 20, 'Tinggi', -10, { prev: 45, tl: 'Penetapan 18 BPR dalam pengawasan intensif dan penyusunan rencana tindak penyehatan.', out: 'Daftar BPR pengawasan intensif dan rencana penyehatan', vn: 'Progres disetujui. Lanjutkan pemantauan rencana penyehatan.' }],
     [2, 'DLIK', 'Menyusun peta jalan peningkatan indeks literasi keuangan di wilayah 3T (terdepan, terluar, tertinggal).', 20, 'Perlu Perbaikan', 60, 'Sedang', -7, { prev: 0, tl: 'Pengumpulan data indeks literasi per provinsi.', vn: 'Mohon lampirkan baseline indeks literasi per provinsi dan rincian target tahunan.' }],
-    [3, 'DMC', 'Mengintensifkan koordinasi Satgas PASTI untuk pemblokiran entitas pinjaman online ilegal.', 100, 'Disetujui', -25, 'Tinggi', -42, { prev: 80, done: -42, tl: 'Pemblokiran 1.240 entitas pinjol ilegal bersama Kementerian Komdigi dan Satgas PASTI.', out: 'Laporan Satgas PASTI Triwulan III', vn: 'Disetujui.' }],
-    [3, 'DITSK', 'Mengembangkan sistem deteksi dini iklan pinjaman online ilegal di media sosial.', 60, 'Belum Diverifikasi', -6, 'Tinggi', -21, { tl: 'Prototipe crawler dan model klasifikasi iklan selesai diuji internal.', kd: 'Pengadaan lisensi API media sosial tertunda.' }],
+    [3, 'DPUK', 'Mengintensifkan koordinasi Satgas PASTI untuk pemblokiran entitas pinjaman online ilegal.', 100, 'Disetujui', -25, 'Tinggi', -42, { prev: 80, done: -42, tl: 'Pemblokiran 1.240 entitas pinjol ilegal bersama Kementerian Komdigi dan Satgas PASTI.', out: 'Laporan Satgas PASTI Triwulan III', vn: 'Disetujui.' }],
+    [3, 'DPIR', 'Mengembangkan sistem deteksi dini iklan pinjaman online ilegal di media sosial.', 60, 'Belum Diverifikasi', -6, 'Tinggi', -21, { tl: 'Prototipe crawler dan model klasifikasi iklan selesai diuji internal.', kd: 'Pengadaan lisensi API media sosial tertunda.' }],
     [3, 'DLIK', 'Menyelenggarakan kampanye edukasi waspada pinjaman online ilegal di 34 provinsi.', 85, 'Menunggu Verifikasi', 18, 'Sedang', -1, { prev: 70, tl: 'Kampanye telah terlaksana di 29 provinsi.', out: 'Rekap peserta dan materi kampanye' }],
-    [4, 'DIKNB', 'Melakukan penilaian kembali (fit and proper) pihak utama pada perusahaan asuransi dalam pengawasan khusus.', 45, 'Belum Diverifikasi', 15, 'Tinggi', -9, { tl: 'Penilaian kembali 9 dari 20 pihak utama selesai.' }],
-    [4, 'DIKNB', 'Menyusun rancangan POJK pemisahan unit usaha syariah perusahaan asuransi.', 0, 'Belum Diverifikasi', 75, 'Sedang', null, {}],
-    [4, 'DIKNB', 'Menyiapkan skema program penjaminan polis bersama Lembaga Penjamin Simpanan.', 15, 'Belum Diverifikasi', 90, 'Sedang', -12, { manual: 'Menunggu Arahan', tl: 'Kajian awal skema penjaminan polis.', kd: 'Menunggu arahan Dewan Komisioner terkait opsi pendanaan program.' }],
+    [4, 'DIPD', 'Melakukan penilaian kembali (fit and proper) pihak utama pada perusahaan asuransi dalam pengawasan khusus.', 45, 'Belum Diverifikasi', 15, 'Tinggi', -9, { tl: 'Penilaian kembali 9 dari 20 pihak utama selesai.' }],
+    [4, 'DPPP', 'Menyusun rancangan POJK pemisahan unit usaha syariah perusahaan asuransi.', 0, 'Belum Diverifikasi', 75, 'Sedang', null, {}],
+    [4, 'DPDK', 'Menyiapkan skema program penjaminan polis bersama Lembaga Penjamin Simpanan.', 15, 'Belum Diverifikasi', 90, 'Sedang', -12, { manual: 'Menunggu Arahan', tl: 'Kajian awal skema penjaminan polis.', kd: 'Menunggu arahan Dewan Komisioner terkait opsi pendanaan program.' }],
     [5, 'DPPM', 'Mempercepat implementasi bursa karbon dan perluasan instrumen yang diperdagangkan.', 75, 'Disetujui', -12, 'Tinggi', -25, { prev: 50, tl: 'Penambahan 2 instrumen unit karbon dan pengembangan perdagangan internasional.', vn: 'Disetujui sebagai progres; target perlu disesuaikan.' }],
-    [5, 'DPPM', 'Memperkuat pengawasan transaksi saham tidak wajar dan praktik manipulasi harga.', 100, 'Menunggu Verifikasi', 8, 'Tinggi', -1, { prev: 80, done: -1, tl: 'Implementasi full call auction dan penyempurnaan unusual market activity monitoring.', out: 'Laporan implementasi sistem surveillance' }],
-    [5, 'DPPM', 'Meningkatkan jumlah investor ritel melalui program Sekolah Pasar Modal di daerah.', 100, 'Disetujui', -40, 'Rendah', -52, { prev: 75, done: -52, tl: 'Program terlaksana di 120 kota; pertumbuhan SID 18% yoy.', out: 'Laporan pelaksanaan Sekolah Pasar Modal', vn: 'Disetujui.' }],
+    [5, 'DPTP', 'Memperkuat pengawasan transaksi saham tidak wajar dan praktik manipulasi harga.', 100, 'Menunggu Verifikasi', 8, 'Tinggi', -1, { prev: 80, done: -1, tl: 'Implementasi full call auction dan penyempurnaan unusual market activity monitoring.', out: 'Laporan implementasi sistem surveillance' }],
+    [5, 'DPVR', 'Meningkatkan jumlah investor ritel melalui program Sekolah Pasar Modal di daerah.', 100, 'Disetujui', -40, 'Rendah', -52, { prev: 75, done: -52, tl: 'Program terlaksana di 120 kota; pertumbuhan SID 18% yoy.', out: 'Laporan pelaksanaan Sekolah Pasar Modal', vn: 'Disetujui.' }],
     [6, 'DLIK', 'Mengalokasikan program inklusi keuangan bagi UMKM dan pelaku usaha ultra mikro.', 30, 'Belum Diverifikasi', 45, 'Sedang', -14, { tl: 'Penyusunan skema pembiayaan klaster bersama TPAKD.' }],
     [6, 'DLIK', 'Mengoptimalkan peran Tim Percepatan Akses Keuangan Daerah (TPAKD) dalam perluasan akses keuangan.', 0, 'Belum Diverifikasi', 50, 'Rendah', null, {}],
-    [7, 'DITSK', 'Menyusun ketentuan pelindungan konsumen aset kripto pasca peralihan pengawasan dari Bappebti.', 50, 'Menunggu Verifikasi', 30, 'Tinggi', -3, { prev: 30, tl: 'Rancangan POJK telah melalui uji publik tahap I.', out: 'RPOJK Pelindungan Konsumen Aset Kripto' }],
-    [7, 'DITSK', 'Melakukan pemeriksaan kepatuhan pedagang aset kripto terhadap ketentuan APU-PPT.', 0, 'Belum Diverifikasi', -3, 'Tinggi', null, {}],
-    [8, 'DPB', 'Melakukan stress test risiko kredit dan risiko pasar terhadap bank sistemik.', 100, 'Disetujui', -60, 'Tinggi', -72, { prev: 60, done: -72, tl: 'Stress test terhadap 15 D-SIB selesai dan hasilnya dilaporkan ke RDK.', out: 'Laporan hasil stress test D-SIB', vn: 'Disetujui.' }],
-    [8, 'DPB', 'Memantau eksposur perbankan terhadap sektor properti dan komoditas.', 90, 'Ditolak', 25, 'Sedang', -5, { prev: 75, tl: 'Pemantauan bulanan eksposur 40 bank terbesar.', vn: 'Data eksposur yang dilampirkan masih posisi Juni. Mohon gunakan posisi terkini.' }],
-    [9, 'DPB', 'Menindaklanjuti rekomendasi BPK terkait dokumentasi proses pengawasan berbasis risiko.', 65, 'Perlu Perbaikan', -15, 'Tinggi', -11, { prev: 40, tl: 'Penyempurnaan SOP dokumentasi RBS; 3 dari 5 rekomendasi telah ditindaklanjuti.', vn: 'Lampirkan bukti penetapan SOP dan surat penyampaian ke BPK.' }],
-    [9, 'DMC', 'Memperbaiki mekanisme pengenaan sanksi administratif dan pemantauan pembayaran denda.', 25, 'Belum Diverifikasi', 40, 'Sedang', -16, { tl: 'Pemetaan proses bisnis pengenaan sanksi administratif.' }],
+    [7, 'DPIA', 'Menyusun ketentuan pelindungan konsumen aset kripto pasca peralihan pengawasan dari Bappebti.', 50, 'Menunggu Verifikasi', 30, 'Tinggi', -3, { prev: 30, tl: 'Rancangan POJK telah melalui uji publik tahap I.', out: 'RPOJK Pelindungan Konsumen Aset Kripto' }],
+    [7, 'DPIR', 'Melakukan pemeriksaan kepatuhan pedagang aset kripto terhadap ketentuan APU-PPT.', 0, 'Belum Diverifikasi', -3, 'Tinggi', null, {}],
+    [8, 'DPKO', 'Melakukan stress test risiko kredit dan risiko pasar terhadap bank sistemik.', 100, 'Disetujui', -60, 'Tinggi', -72, { prev: 60, done: -72, tl: 'Stress test terhadap 15 D-SIB selesai dan hasilnya dilaporkan ke RDK.', out: 'Laporan hasil stress test D-SIB', vn: 'Disetujui.' }],
+    [8, 'DPW1', 'Memantau eksposur perbankan terhadap sektor properti dan komoditas.', 90, 'Ditolak', 25, 'Sedang', -5, { prev: 75, tl: 'Pemantauan bulanan eksposur 40 bank terbesar.', vn: 'Data eksposur yang dilampirkan masih posisi Juni. Mohon gunakan posisi terkini.' }],
+    [9, 'DPKP', 'Menindaklanjuti rekomendasi BPK terkait dokumentasi proses pengawasan berbasis risiko.', 65, 'Perlu Perbaikan', -15, 'Tinggi', -11, { prev: 40, tl: 'Penyempurnaan SOP dokumentasi RBS; 3 dari 5 rekomendasi telah ditindaklanjuti.', vn: 'Lampirkan bukti penetapan SOP dan surat penyampaian ke BPK.' }],
+    [9, 'DPUK', 'Memperbaiki mekanisme pengenaan sanksi administratif dan pemantauan pembayaran denda.', 25, 'Belum Diverifikasi', 40, 'Sedang', -16, { tl: 'Pemetaan proses bisnis pengenaan sanksi administratif.' }],
     [10, null, 'Menyusun modul edukasi keuangan berbasis kearifan lokal untuk Kantor OJK di daerah.', 0, 'Belum Diverifikasi', 80, 'Sedang', null, { bidang: 'Pengawasan Perilaku Pelaku Usaha Jasa Keuangan dan Pelindungan Konsumen' }],
-    [10, 'DMC', 'Mengevaluasi efektivitas penanganan pengaduan konsumen pada PUJK di daerah.', 30, 'Perlu Perbaikan', 28, 'Sedang', -6, { prev: 10, tl: 'Evaluasi pada 6 Kantor OJK daerah.', vn: 'Mohon lengkapi data pengaduan per kantor dan lampirkan rekap tindak lanjut.' }]
+    [10, 'DPLK', 'Mengevaluasi efektivitas penanganan pengaduan konsumen pada PUJK di daerah.', 30, 'Perlu Perbaikan', 28, 'Sedang', -6, { prev: 10, tl: 'Evaluasi pada 6 Kantor OJK daerah.', vn: 'Mohon lengkapi data pengaduan per kantor dan lampirkan rekap tindak lanjut.' }],
+    [9, 'DRPK', 'Memperkuat penerapan manajemen risiko terintegrasi dan pengendalian kualitas pada seluruh satuan kerja OJK.', 45, 'Disetujui', 50, 'Tinggi', -9, { prev: 25, tl: 'Pemutakhiran profil risiko 52 satuan kerja dan uji petik pengendalian kualitas.', out: 'Laporan profil risiko satker semester I', vn: 'Disetujui.' }],
+    [9, 'DPAI', 'Melakukan audit internal atas efektivitas tindak lanjut rekomendasi BPK RI pada satuan kerja pengawasan.', 30, 'Menunggu Verifikasi', 35, 'Tinggi', -2, { prev: 10, tl: 'Audit lapangan pada 4 satuan kerja pengawasan perbankan dan pasar modal.' }],
+    [8, 'DINP', 'Menyiapkan bahan penilaian bersama (mutual evaluation) FATF terkait penerapan APU-PPT di sektor jasa keuangan.', 60, 'Disetujui', 70, 'Tinggi', -12, { prev: 40, tl: 'Penyusunan technical compliance questionnaire dan koordinasi dengan PPATK.', vn: 'Disetujui.' }],
+    [2, 'DPSU', 'Menyelaraskan rencana strategis dan rencana kerja anggaran OJK 2027 dengan rekomendasi Komisi XI DPR RI.', 70, 'Disetujui', 30, 'Tinggi', -8, { prev: 50, tl: 'Penyesuaian RKA 2027 dan indikator kinerja utama OJK.', out: 'Draf RKA OJK 2027', vn: 'Disetujui.' }],
+    [1, 'UKTF', 'Mempercepat program transformasi digital proses bisnis pengawasan OJK berbasis supervisory technology.', 35, 'Belum Diverifikasi', 80, 'Sedang', -15, { tl: 'Penyusunan cetak biru SupTech dan pilot dashboard pengawasan terintegrasi.' }],
+    [10, 'DMND', 'Memperkuat peran Kantor OJK di daerah dalam pengawasan dan edukasi keuangan sesuai karakteristik wilayah.', 20, 'Belum Diverifikasi', 60, 'Sedang', -10, { tl: 'Pemetaan kebutuhan kapasitas 35 Kantor OJK.' }],
+    [3, 'DPLJ', 'Memperketat pengawasan penyelenggara LPBBTI (pinjaman daring) yang belum memenuhi ketentuan ekuitas minimum.', 55, 'Disetujui', 20, 'Tinggi', -7, { prev: 35, tl: 'Penetapan rencana tindak 12 penyelenggara LPBBTI.', out: 'Daftar LPBBTI dalam pengawasan intensif', vn: 'Disetujui.' }],
+    [3, 'DPPL', 'Menyusun pengaturan layanan Buy Now Pay Later (BNPL) oleh perusahaan pembiayaan.', 40, 'Menunggu Verifikasi', 65, 'Sedang', -3, { prev: 20, tl: 'Rancangan POJK BNPL telah dibahas dengan asosiasi.' }],
+    [2, 'DPVL', 'Meningkatkan pengawasan perusahaan pembiayaan dengan rasio pembiayaan bermasalah (NPF) di atas ketentuan.', 25, 'Belum Diverifikasi', -4, 'Tinggi', -20, { tl: 'Identifikasi 9 perusahaan pembiayaan dengan NPF di atas 5%.', kd: 'Data restrukturisasi belum lengkap.' }],
+    [8, 'DPPK', 'Menyusun kerangka pengaturan penyelenggaraan bursa mineral dan komoditas strategis.', 35, 'Disetujui', 85, 'Tinggi', -6, { prev: 15, tl: 'Kajian benchmarking bursa komoditas di 4 yurisdiksi.', vn: 'Disetujui.' }],
+    [8, 'DPBK', 'Memetakan calon penyelenggara dan pelaku transaksi bursa mineral dan komoditas strategis.', 20, 'Belum Diverifikasi', 55, 'Sedang', -11, { tl: 'Inventarisasi calon penyelenggara dan anggota bursa.' }],
+    [8, 'DPPK', 'Berkoordinasi dengan kementerian terkait dalam penetapan komoditas strategis yang diperdagangkan di bursa.', 0, 'Belum Diverifikasi', 95, 'Sedang', null, {}]
   ];
 
   const auditLogs = [];
@@ -248,7 +305,7 @@ function buildSeed() {
   // Penugasan strategis OJK-wide → SI-GRC: Tandai (MRDK) → Kirim (MRDK) → Kelompokkan & input profil risiko (Admin SI-GRC) → Konfirmasi RQO
   // [planIdx, catatan MRDK, { f: hari tandai, s: hari kirim, m: [kategori, risiko, level, hari], c: hari konfirmasi, then: kondisi saat selesai }]
   const MR = 'Ardhiansyah K', GA = 'Rudi Hartono';
-  const RQO = { 'Departemen Pengawasan Bank': 'Lina Marlina' };
+  const RQO = { 'Departemen Pengendalian Kualitas dan Pengembangan Pengawasan Perbankan': 'Lina Marlina' };
   const rqoOf = sat => RQO[sat] || `RQO ${(MASTER_SATKER.find(x => x.name === sat) || {}).key || ''}`.trim();
   const G = [
     [0, 'Kerangka pengawasan market conduct digital berlaku lintas sektor PUJK.', { f: -7, s: -6, m: ['Risiko Strategis', 'Ketidakefektifan pengawasan market conduct atas aktivitas keuangan digital', 'Rendah', -5], c: -4 }],
@@ -354,14 +411,14 @@ function buildSeed() {
     note(['satker:' + a.satker], `${a.id} ${a.verificationStatus === 'Ditolak' ? 'ditolak' : 'dikembalikan untuk perbaikan'} oleh Admin MRDK.`, 'late', { type: 'plan', id: a.id }, a.submissions.at(-1)?.resultAt || a.updatedAt));
   actionPlans.filter(a => a._late).forEach(a => { note(['admin', 'viewer', 'satker:' + a.satker], `${a.id} telah melewati target penyelesaian (${fmtDate(a.targetDate)}).`, 'late', { type: 'plan', id: a.id }, a._late); delete a._late; });
   note(['admin'], 'Dokumen baru "Laporan Singkat RDP Komisi XI - Pelindungan Konsumen Asuransi.pdf" siap diproses.', 'info', { type: 'doc', id: 'DOC-2026-011' }, documents[10].upload_date);
-  note(['admin', 'viewer'], 'Departemen Pengawasan Pasar Modal melakukan update progress RA-2026-014 menjadi 100%.', 'ok', { type: 'plan', id: 'RA-2026-014' }, actionPlans[13].updatedAt);
-  note(['satker:Direktorat Market Conduct'], 'RA-2026-002 telah disetujui Admin MRDK.', 'ok', { type: 'plan', id: 'RA-2026-002' }, actionPlans[1].submissions[0].resultAt);
+  note(['admin', 'viewer'], 'DPTP melakukan update progress RA-2026-014 menjadi 100%.', 'ok', { type: 'plan', id: 'RA-2026-014' }, actionPlans[13].updatedAt);
+  note(['satker:Departemen Pelindungan Konsumen'], 'RA-2026-002 telah disetujui Admin MRDK.', 'ok', { type: 'plan', id: 'RA-2026-002' }, actionPlans[1].submissions[0].resultAt);
   note(['admin'], '4 penugasan strategis siap/perlu dikirim ke SI-GRC.', 'warn', { type: 'grc' }, T(0, 7, 30));
-  note(['admin'], 'Departemen Literasi dan Inklusi Keuangan mengajukan penyesuaian prioritas RA-2026-016.', 'warn', { type: 'plan', id: 'RA-2026-016' }, actionPlans[15].cls.proposal.at);
+  note(['admin'], 'DLIK mengajukan penyesuaian prioritas RA-2026-016.', 'warn', { type: 'plan', id: 'RA-2026-016' }, actionPlans[15].cls.proposal.at);
   note(['admin'], '2 trajectory menunggu persetujuan MRDK (RA-2026-003, RA-2026-009).', 'warn', { type: 'plan', id: 'RA-2026-003' }, actionPlans[8].traj.submittedAt);
-  note(['satker:Direktorat Market Conduct'], 'Mohon konfirmasi prioritas RA-2026-023 yang ditetapkan MRDK.', 'warn', { type: 'plan', id: 'RA-2026-023' }, actionPlans[22].cls.at);
-  note(['satker:Direktorat Market Conduct'], 'Prioritas RA-2026-025 telah dikonfirmasi — silakan susun trajectory.', 'info', { type: 'plan', id: 'RA-2026-025' }, actionPlans[24].cls.confirmedAt);
-  note(['satker:Departemen Literasi dan Inklusi Keuangan'], 'Trajectory RA-2026-006 dikembalikan MRDK untuk diperbaiki.', 'late', { type: 'plan', id: 'RA-2026-006' }, actionPlans[5].traj.reviewAt);
+  note(['satker:Departemen Pengawasan Perilaku Pelaku Usaha Jasa Keuangan'], 'Mohon konfirmasi prioritas RA-2026-023 yang ditetapkan MRDK.', 'warn', { type: 'plan', id: 'RA-2026-023' }, actionPlans[22].cls.at);
+  note(['satker:Departemen Pelindungan Konsumen'], 'Prioritas RA-2026-025 telah dikonfirmasi — silakan susun trajectory.', 'info', { type: 'plan', id: 'RA-2026-025' }, actionPlans[24].cls.confirmedAt);
+  note(['satker:Departemen Literasi, Inklusi Keuangan, dan Komunikasi'], 'Trajectory RA-2026-006 dikembalikan MRDK untuk diperbaiki.', 'late', { type: 'plan', id: 'RA-2026-006' }, actionPlans[5].traj.reviewAt);
   notifications.sort((a, b) => b.at.localeCompare(a.at));
 
   return {

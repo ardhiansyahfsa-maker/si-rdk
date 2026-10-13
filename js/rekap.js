@@ -5,7 +5,7 @@
    TERVERIFIKASI = progres pada update terakhir yang disetujui MRDK.
    ========================================================================= */
 
-ui.rekap = { pos: 'today', date: '', basis: 'verified', showEmpty: true, closed: {} };
+ui.rekap = { pos: 'today', date: '', basis: 'verified', showEmpty: false, closed: {} };
 
 function rekapCutoff() {
   const r = ui.rekap; const y = +todayISO().slice(0, 4);
@@ -85,7 +85,7 @@ registerPage('rekap', {
     const body = groups.map(g => {
       const closed = r.closed[g.code]; const sats = g.sats.filter(s => r.showEmpty || s.items.length);
       return `<tr class="clickable" style="background:var(--surface-2)" data-act="rkToggle" data-code="${esc(g.code)}"><td data-label="Bidang"><span style="display:inline-flex;gap:8px;align-items:flex-start">${icon(closed ? 'chevRight' : 'chevDown', 'sm')}<span><b>${esc(g.code)}</b> <span class="small muted">· ${sats.length} satker</span><div class="small" style="color:var(--ink-2);max-width:340px">${esc(g.name)}</div></span></span></td>${rkCells(g.k, true)}</tr>
-        ${closed ? '' : sats.map(s => `<tr class="${s.items.length ? 'clickable' : ''}" ${s.items.length && !s.unassigned ? `data-act="rkSatker" data-s="${esc(s.name)}"` : ''}><td data-label="Satker"><div style="padding-left:26px"><span class="mono small" style="color:var(--blue-700)">${esc(s.key)}</span> ${esc(s.name)}${s.pic ? `<div class="small muted">PIC: ${esc(s.pic)}</div>` : ''}</div></td>${rkCells(s.k)}</tr>`).join('')}
+        ${closed ? '' : sats.map(s => `<tr class="${s.items.length ? 'clickable' : ''}" ${s.items.length && !s.unassigned ? `data-act="rkSatker" data-s="${esc(s.name)}"` : ''}><td data-label="Satker"><div style="padding-left:26px"><span class="mono small" style="color:var(--blue-700)">${esc(s.key)}</span> ${esc(s.name)}${s.pic && !/^PIC /.test(s.pic) ? `<div class="small muted">PIC: ${esc(s.pic)}</div>` : ''}</div></td>${rkCells(s.k)}</tr>`).join('')}
         ${!closed && !sats.length ? `<tr><td colspan="${RK_COLS.length + 1}"><div class="small muted" style="padding-left:26px">Belum ada satker terdaftar pada bidang ini di Master Data.</div></td></tr>` : ''}`;
     }).join('');
     const kpi = (label, value, sub, ic, tone) => `<div class="kpi t-${tone} static"><div class="k-label"><span>${label}</span><span class="k-ic">${icon(ic, 'sm')}</span></div><div class="k-val">${value}</div><div class="k-sub">${sub}</div></div>`;

@@ -13,7 +13,9 @@ Aplikasi web statis (HTML, CSS, JavaScript) tanpa proses build.
 Catatan: data aplikasi tersimpan di localStorage browser masing-masing pengguna.
 
 ## Hak akses
-Tiga peran: **Admin MRDK** (`admin` / `admin123`), **Satker** (`satker` / `satker123`), **Pimpinan** (`viewer` / `viewer123`).
+Tiga peran: **Admin MRDK** (`admin` / `admin123`), **Satker** (`satker` / `satker123` — DPUK; juga `satker.dpw1`, `satker.dlik`), **Pimpinan** (`viewer` / `viewer123`).
+
+Master data memuat 9 bidang dan 51 satuan kerja OJK.
 
 ## Rekap & Laporan
 Menu **Monitoring → Rekap & Laporan** (Admin MRDK, Pimpinan): rekap bertingkat **9 bidang OJK → satuan kerja**
