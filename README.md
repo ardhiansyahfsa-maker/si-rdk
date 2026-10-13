@@ -30,6 +30,12 @@ yang dihasilkan langsung dari data SI-RDK Terintegrasi.
 - Ekspor **PDF** (A4 landscape, kop OJK, nomor halaman; berisi rekap bidang & satker + rincian per bidang).
 - Ekspor Excel 3 sheet: *Rekap Bidang & Satker*, *Rekap Bidang*, *Rincian Penugasan*; juga CSV dan cetak.
 
+## Laporan PDF untuk Dewan Komisioner
+Tombol **Laporan PDF untuk DK** di Executive Dashboard menghasilkan laporan A4 berisi: ringkasan eksekutif;
+(1) status penyelesaian dengan 2 status (Dalam Proses · Selesai) dan rincian per bidang; (2) penugasan yang
+mendekati jatuh tempo (≤ 30 hari), terlambat, dan tertinggal trajectory; (3) pemisahan arahan RDK/DK vs hasil
+rapat dengan Komisi XI; (4) statistik prioritas serta daftar P1 (Kritis) dan P2 (Tinggi).
+
 ## Prioritas & Trajectory
 Menu **Monitoring → Prioritas & Trajectory**:
 1. **Admin MRDK** menetapkan **Urgensi** dan **Dampak** (Tinggi/Sedang/Rendah) → kuadran P1 Kritis · P2 Tinggi · P3 Sedang · P4 Rendah.

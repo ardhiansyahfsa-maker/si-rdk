@@ -270,7 +270,7 @@ registerPage('executive', {
     const highRec = strat.filter(a => a.grc?.recorded?.level === 'Tinggi' && grcStatus(a) === 'Selesai').length;
     return `<div class="page">
       <div class="page-head"><div><div class="crumb">Monitoring · Executive Dashboard</div><h1>Executive Dashboard</h1><div class="sub">Ringkasan untuk pimpinan per ${fmtDateLong(today)}. Angka progres <b>terverifikasi</b> = update terakhir yang disetujui MRDK.</div></div>
-        <div class="btn-group">${exportButtons('rekap')}</div></div>
+        <div class="btn-group"><button class="btn primary sm" data-act="briefPDF" title="Laporan ringkas untuk Dewan Komisioner: status, perhatian, sumber arahan, prioritas">${icon('file')}Laporan PDF untuk DK</button>${exportButtons('rekap')}</div></div>
       <section class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
         <div class="kpi big t-blue static"><div class="k-label">Total Arahan RDK <span class="k-ic">${icon('flag', 'sm')}</span></div><div class="k-val">${k.sessions}</div><div class="k-sub">${k.total} penugasan · ${k.docs} dokumen rujukan</div></div>
         ${kpiCard({ label: 'Selesai Terverifikasi', value: verDone, sub: `${k.selesai} dilaporkan selesai oleh satker`, ic: 'checkCircle', tone: 'green', f: 'status:Selesai' })}
