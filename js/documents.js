@@ -24,12 +24,12 @@ async function processDocument(doc, onStage, onLog) {
   doc.ocr_accuracy = ocr.accuracy;
   log(`[ocr] Selesai · akurasi rata-rata ${ocr.accuracy}%`, true);
   const tx = await api.extractText(doc, p => onStage(2, p));
-  log(`[text] Normalisasi teks, ${tx.paragraphs} paragraf, deteksi struktur "Pokok-pokok Arahan"`, true);
+  log(`[text] Normalisasi teks, ${tx.paragraphs} paragraf, deteksi struktur ${isDprDoc(doc) ? '"KESIMPULAN/KEPUTUSAN"' : '"Pokok-pokok Arahan"'}`, true);
   log('[llm] Skema keluaran: arahan_rdk.v2 (9 field + usulan atensi + usulan target)');
   let said = false;
   const items = await api.structureWithLLM(doc, p => { onStage(3, p); if (p > .55 && !said) { said = true; log('[llm] Memetakan bidang dan satker penanggung jawab ke master data'); } });
   log(`[llm] ${items.length} poin arahan teridentifikasi`, true);
-  if (isDprDoc(doc)) applyDispositionToItems(doc, items, log);
+  if (isDprDoc(doc)) { const mt = dprMeta(doc); log(`[ocr] Identitas rapat: Rapat ke-${mt.rapatKe} · ${mt.jenisRapat} · TS ${mt.tahunSidang} · Masa Persidangan ${mt.masaSidang}`); log('[llm] Membaca bagian KESIMPULAN/KEPUTUSAN · 1 butir bukan permintaan tindak lanjut dilewati', true); applyDispositionToItems(doc, items, log); }
   items.forEach((it, i) => log(isDprDoc(doc) ? `[sipena] #${i + 1} → ${it.satker ? satkerShort(it.satker) + ' (disposisi ' + it.dispNo + ')' : 'perlu dipetakan MRDK ke tujuan disposisi'}${it.llmSatker && it.llmSatker !== it.satker ? ' · usulan LLM: ' + satkerShort(it.llmSatker) : ''}` : `[llm]  #${i + 1} → ${it.satker || 'satker belum teridentifikasi'} (${Math.round((it.conf.satker || .8) * 100)}%)`));
   doc.ocr_status = 'Selesai'; doc.document_status = 'Selesai'; doc.extraction_status = 'Perlu Review';
   doc.topic = items[0]?.topic || doc.topic;
@@ -266,6 +266,7 @@ function pickOcrDoc() {
   return id ? findDoc(id) : null;
 }
 function paperHTML(doc) {
+  if (isDprDoc(doc)) return dprPaperHTML(doc);
   const items = doc.extraction?.items || [];
   const done = doc.ocr_status === 'Selesai' && items.length;
   const rdk = items[0]?.rdkDate || doc.document_date;
@@ -285,6 +286,7 @@ function paperHTML(doc) {
   </div>`;
 }
 function ocrRawText(doc) {
+  if (isDprDoc(doc)) return dprRawText(doc);
   const items = doc.extraction?.items || [];
   if (doc.ocr_status !== 'Selesai') return 'Dokumen belum melalui proses OCR.\nKlik "Process Document" untuk menjalankan OCR dan ekstraksi.';
   return [`--- halaman 1/${doc.pages} ---`, 'OTORITAS JASA KEUANGAN', 'REPUBLIK INDONESIA', '', doc.document_type.toUpperCase(), doc.document_number || '', '',
@@ -372,6 +374,7 @@ registerPage('ocr', {
               <div class="dl"><dt>Sumber</dt><dd>${esc(doc.source)}</dd></div>
               <div class="dl"><dt>Jenis dokumen</dt><dd>${esc(doc.document_type)}</dd></div>
               <div class="dl"><dt>Diunggah</dt><dd>${esc(doc.uploaded_by)} · ${fmtDT(doc.upload_date)}</dd></div>
+              ${dprInfoHTML(doc)}
               <div class="dl"><dt>OCR</dt><dd>${doc.pages} halaman${doc.ocr_accuracy ? ` · akurasi ${doc.ocr_accuracy.toFixed(1)}%` : ''}</dd></div>
             </dl>${isDprDoc(doc) ? `<div class="section-label" style="margin:14px 0 8px">Disposisi ADK (SIPENA) — dasar penetapan satker</div>${dispListHTML(doc)}` : ''}</div></section>
           <section class="panel"><div class="panel-head"><div><h3>Extracted Information</h3><div class="desc">${processed ? `${items.length} poin arahan · ${esc(doc.extraction.model)} · ${fmtDT(doc.extraction.runAt)}` : 'Belum ada hasil ekstraksi'}</div></div></div>
