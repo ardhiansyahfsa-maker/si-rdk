@@ -73,6 +73,6 @@ SI-RDK **tidak menilai risiko**: kategori, nama risiko, dan level risiko ditetap
 ## Data IRU Risiko Pengaturan (SI-GRC)
 IRU di SI-GRC: *Concern yang perlu direspon dengan penyesuaian atau pengkinian ketentuan* (Desired 100% · Acceptable 100%), dinilai triwulanan.
 - Penugasan ditandai **memerlukan penyesuaian/pengkinian ketentuan** (saran LLM saat ekstraksi, ditetapkan MRDK di detail rencana aksi) — apa pun cakupannya.
-- **Pemilik risiko:** departemen pengaturan pada bidang terkait (otomatis, dapat diubah MRDK). **Departemen Hukum** tercatat sebagai satker terkait (harmonisasi dan penyelarasan).
+- **Pemilik risiko:** departemen pengaturan pada bidang terkait (otomatis, dapat diubah MRDK); untuk bidang PEPK fungsi pengaturan ada di Departemen Pelindungan Konsumen (DPLK). **Departemen Hukum** tercatat sebagai satker terkait (harmonisasi dan penyelarasan).
 - **Realisasi** = peraturan selesai (progres 100% disetujui MRDK) ÷ concern, kumulatif tahun berjalan s.d. akhir triwulan. Panel di halaman Integrasi SI-GRC; Admin MRDK mengirim realisasi per triwulan. Status IRU ditetapkan SI-GRC.
 

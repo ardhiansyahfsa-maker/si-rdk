@@ -14,8 +14,8 @@ const IRU = {
   risk: 'Risiko Pengaturan', name: 'Concern yang perlu direspon dengan penyesuaian atau pengkinian ketentuan',
   desired: '100%', acceptable: '100%', endpoint: 'POST /api/grc/v1/kri-realizations', related: 'DHUK'
 };
-const REG_DEPTS = ['DPNP', 'DPMS', 'DPPM', 'DPPP', 'DPPL', 'DPIA', 'DPPK'];
-const REG_OWNER_BY_BIDANG = { PBKN: 'DPNP', PMDK: 'DPPM', PPDP: 'DPPP', PVML: 'DPPL', IAKD: 'DPIA', BMKS: 'DPPK' };
+const REG_DEPTS = ['DPNP', 'DPMS', 'DPPM', 'DPPP', 'DPPL', 'DPIA', 'DPPK', 'DPLK'];
+const REG_OWNER_BY_BIDANG = { PBKN: 'DPNP', PMDK: 'DPPM', PPDP: 'DPPP', PVML: 'DPPL', IAKD: 'DPIA', BMKS: 'DPPK', PEPK: 'DPLK' };
 /** Saran awal (LLM) — arahan yang meminta penyusunan/penyesuaian ketentuan. */
 const REG_HINT = /(menyusun|menyempurnakan|merevisi|mengkinikan|menerbitkan|penyesuaian|pengkinian|mengubah)[^.]{0,60}(POJK|SEOJK|ketentuan|pengaturan|regulasi|peraturan)/i;
 const regNeeded = ap => !!ap?.reg?.needed;
